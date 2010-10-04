@@ -25,11 +25,80 @@ class Cursor(object):
     def full_collection_name(self):
         return '%s.%s' % (self.__dbname, self.__collection)
     
+    def find_one(self, spec_or_id, **kwargs):
+        """Get a single document from the database.
+
+        All arguments to :meth:`find` are also valid arguments for
+        :meth:`find_one`, although any `limit` argument will be
+        ignored. Returns a single document, or ``None`` if no matching
+        document is found.
+        """
+        if spec_or_id is not None and not isinstance(spec_or_id, dict):
+            spec_or_id = {"_id": spec_or_id}
+        kwargs['limit'] = -1
+        self.find(spec_or_id, **kwargs)
+    
     def find(self, spec=None, fields=None, skip=0, limit=0,
                  timeout=True, snapshot=False, tailable=False, sort=None,
-                 max_scan=None, as_class=None,
+                 max_scan=None, 
                  _must_use_master=False, _is_command=False, 
                  callback=None):
+        """Query the database.
+        
+        The `spec` argument is a prototype document that all results
+        must match. For example:
+        
+        >>> db.test.find({"hello": "world"}, callback=...)
+        
+        only matches documents that have a key "hello" with value
+        "world".  Matches can have other keys *in addition* to
+        "hello". The `fields` argument is used to specify a subset of
+        fields that should be included in the result documents. By
+        limiting results to a certain subset of fields you can cut
+        down on network traffic and decoding time.
+        
+        Raises :class:`TypeError` if any of the arguments are of
+        improper type. 
+        
+        :Parameters:
+          - `spec` (optional): a SON object specifying elements which
+            must be present for a document to be included in the
+            result set
+          - `fields` (optional): a list of field names that should be
+            returned in the result set ("_id" will always be
+            included), or a dict specifying the fields to return
+          - `skip` (optional): the number of documents to omit (from
+            the start of the result set) when returning the results
+          - `limit` (optional): the maximum number of results to
+            return
+          - `timeout` (optional): if True, any returned cursor will be
+            subject to the normal timeout behavior of the mongod
+            process. Otherwise, the returned cursor will never timeout
+            at the server. Care should be taken to ensure that cursors
+            with timeout turned off are properly closed.
+          - `snapshot` (optional): if True, snapshot mode will be used
+            for this query. Snapshot mode assures no duplicates are
+            returned, or objects missed, which were present at both
+            the start and end of the query's execution. For details,
+            see the `snapshot documentation
+            <http://dochub.mongodb.org/core/snapshot>`_.
+          - `tailable` (optional): the result of this find call will
+            be a tailable cursor - tailable cursors aren't closed when
+            the last data is retrieved but are kept open and the
+            cursors location marks the final document's position. if
+            more data is received iteration of the cursor will
+            continue from the last document received. For details, see
+            the `tailable cursor documentation
+            <http://www.mongodb.org/display/DOCS/Tailable+Cursors>`_.
+          - `sort` (optional): a list of (key, direction) pairs
+            specifying the sort order for this query. See
+            :meth:`~pymongo.cursor.Cursor.sort` for details.
+          - `max_scan` (optional): limit the number of documents
+            examined when performing the query
+        
+        .. mongodoc:: find
+        """
+         
         if spec is None:
             spec = {}
 
@@ -69,7 +138,7 @@ class Cursor(object):
         self.__hint = None
         # self.__as_class = as_class
         self.__tz_aware = False #collection.database.connection.tz_aware
-        self.__must_use_master = True #_must_use_master
+        self.__must_use_master = _must_use_master
         self.__is_command = False # _is_commandf
         
         self.callback = callback

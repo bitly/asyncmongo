@@ -5,18 +5,13 @@ sys.path.append("")
 import asyncmongo
 import tornado.ioloop
 
+called = False
 def test_query():
     db = asyncmongo.connect('127.0.0.1', 27017, dbname='history')
     
-    called = False
-
     def callback(response):
         global called
-        assert response['cursor_id'] == 0
-        assert len(response['data']) == 1
-        assert response['number_returned'] == 1
-        assert response['starting_from'] == 0
-        
+        assert len(response) == 1
         called = True
         tornado.ioloop.IOLoop.instance().stop()
     

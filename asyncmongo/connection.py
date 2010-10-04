@@ -39,6 +39,9 @@ class Connection(object):
     def cursor(self, name):
         return cursor.Cursor(self, self.__dbname, name)
 
+    def threadsafety(self):
+        return 2
+
     def close(self):
         self.__stream.close()
     
@@ -62,7 +65,7 @@ class Connection(object):
         
         self._callback=callback
         (self._request_id, data) = message
-        logging.info('request id %d' % self._request_id)
+        logging.info('request id %d writing %r' % (self._request_id, data))
         self.__stream.write(data)
         self.__stream.read_bytes(16, callback=self._parse_header)
         return self._request_id # used by get_more()
