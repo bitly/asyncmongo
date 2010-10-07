@@ -6,7 +6,7 @@ import helpers
 import struct
 import logging
 
-from errors import DataError
+from errors import DataError, ProgrammingError, IntegrityError
 
 # The mongo wire protocol is described at
 # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol
@@ -21,6 +21,7 @@ class Connection(object):
         self.__dbname = dbname
         self.__slave_ok = slave_ok
         self.__stream = None
+        self.__callback = None
         self.__connect()
     
     def __connect(self):
@@ -83,17 +84,19 @@ class Connection(object):
         
     def send_message(self, message, callback):
         # TODO: handle reconnect
+        if self.__callback is not None:
+            raise ProgrammingError('connection already in use')
         
-        self._callback=callback
+        self.__callback=callback
         (self._request_id, data) = message
-        logging.info('request id %d writing %r' % (self._request_id, data))
+        # logging.info('request id %d writing %r' % (self._request_id, data))
         self.__stream.write(data)
         self.__stream.read_bytes(16, callback=self._parse_header)
         return self._request_id # used by get_more()
     
     def _parse_header(self, header):
         # return self.__receive_data_on_socket(length - 16, sock)
-        logging.info('got data %r' % header)
+        # logging.info('got data %r' % header)
         length = int(struct.unpack("<i", header[:4])[0])
         request_id = struct.unpack("<i", header[8:12])[0]
         assert request_id == self._request_id, \
@@ -101,16 +104,30 @@ class Connection(object):
                                        request_id)
         operation = 1 # who knows why
         assert operation == struct.unpack("<i", header[12:])[0]
-        logging.info('%s' % length)
+        # logging.info('%s' % length)
         # logging.info('waiting for another %d bytes' % length - 16)
         self.__stream.read_bytes(length - 16, callback=self._parse_response)
 
     def _parse_response(self, response):
-        logging.info('got data %r' % response)
-        response = helpers._unpack_response(response, self._request_id) # TODO: pass tz_awar
-        logging.info('response: %s' % response)
-        self._callback(response)
-        self._callback = None
-        self._request_id = None
+        # logging.info('got data %r' % response)
+        try:
+            response = helpers._unpack_response(response, self._request_id) # TODO: pass tz_awar
+        except Exception, e:
+            logging.error('error %s' % e)
+            self.__callback(None, e)
+            self.__callback = None
+            self.__request_id = None
+            return
+
+        if response and response['data'] and response['data'][0].get('err') and response['data'][0].get('code'):
+            # logging.error(response['data'][0]['err'])
+            self.__callback(None, IntegrityError(response['data'][0]['err'], code=response['data'][0]['code']))
+            self.__callback = None
+            self.__request_id = None
+            return
+        # logging.info('response: %s' % response)
+        self.__callback(response)
+        self.__callback = None
+        self.__request_id = None
 
 

@@ -332,21 +332,14 @@ class Cursor(object):
                           self.__skip, self.__limit,
                           self.__query_spec(), self.__fields), callback=self._handle_response)
     
-    def _handle_response(self, result):
-        logging.info('%r' % result)
-        # {'cursor_id': 0, 'data': [], 'number_returned': 0, 'starting_from': 0}
-        # TODO: wrap this in a functools.partial
-        # TODO: return the full mapping?
-        self.callback(result['data'], error=None)
+    def _handle_response(self, result, error=None):
+        if error:
+            logging.error('%s %s' % (self.full_collection_name , error))
+            self.callback(None, error=error)
+        else:
+            logging.info('%s %r' % (self.full_collection_name , result))
+            self.callback(result['data'], error=None)
         self.callback = None
-        # TODO: handle get_more; iteration of data
-        # if self.__more_data:
-        #     self._connection.send_message(
-        #         message.get_more(self.full_collection_name,
-        #                                self.__limit, self.__id), callback=self._handle_response)
-        #     self.__more_data = None
-        # else:
-        #     self._callback(result)
     
     def __query_options(self):
         """Get the query options string to use for this query.
