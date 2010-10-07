@@ -13,6 +13,7 @@ Usage
 -----
 
     import asyncmongo
+    import tornado.web
     from DBUtils import PooledDB
     db_pool = PooledDB.PooledDB(asyncmongo, host='127.0.0.1', port=27107, dbname='test', maxconnections=50)
 
@@ -24,10 +25,22 @@ Usage
             return self._db
     
         def get(self):
-            self.db.history.users.find({'username': self.current_user}, limit=1, callback=self._on_response)
+            cursor = self.db.cursor("users_collection")
+            cursor.users.find({'username': self.current_user}, limit=1, callback=self._on_response)
     
-        def _on_response(self, response):
+        def _on_response(self, response, error):
+            if error:
+                raise tornado.web.HTTPError(500)
             self.render('template', full_name=respose['full_name'])
+
+About
+-----
+
+`DBUtils.PooledDB` gives a good interface for pooling connections. `dedicated_connection()` gives a cursor back that will be released when it's not referenced anymore (normally at the end of the request), but if you need to make multiple queries you need to manage cursors individually or don't make simultaneous mongo queries.
+
+`asyncmongo` connections are DB API v2 compliant which allows them to be used with DB Pooling libraries like `DBUtils` however because of their asynchronous nature care must be given to connection re-use beyond the normal threadsafety.
+
+Features not supported: some features from pymongo are not currently implemented: namely directly interfacing with indexes, dropping collections, and retrieving results in batches instead of all at once. (asyncmongo's nature means that no calls are blocking regardless of the number of results you are retrieving)
 
 Requirements
 ------------

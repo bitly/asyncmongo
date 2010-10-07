@@ -4,6 +4,7 @@ import logging
 
 import helpers
 import message
+from errors import ProgrammingError
 
 _QUERY_OPTIONS = {
     "tailable_cursor": 2,
@@ -20,14 +21,195 @@ class Cursor(object):
         self._connection = connection
         self.__dbname = dbname
         self.__collection = collection
+        self.callback = None
     
     @property
     def full_collection_name(self):
-        return '%s.%s' % (self.__dbname, self.__collection)
+        return u'%s.%s' % (self.__dbname, self.__collection)
+    
+    def drop(self, *args, **kwargs):
+        raise NotImplemented("patches accepted")
+
+    def insert(self, doc_or_docs,
+               manipulate=True, safe=False, check_keys=True, callback=None, **kwargs):
+        """Insert a document(s) into this collection.
+        
+        If `manipulate` is set, the document(s) are manipulated using
+        any :class:`~pymongo.son_manipulator.SONManipulator` instances
+        that have been added to this
+        :class:`~pymongo.database.Database`. Returns the ``"_id"`` of
+        the inserted document or a list of ``"_id"`` values of the
+        inserted documents.  If the document(s) does not already
+        contain an ``"_id"`` one will be added.
+        
+        If `safe` is ``True`` then the insert will be checked for
+        errors, raising :class:`~pymongo.errors.OperationFailure` if
+        one occurred. Safe inserts wait for a response from the
+        database, while normal inserts do not.
+        
+        Any additional keyword arguments imply ``safe=True``, and
+        will be used as options for the resultant `getLastError`
+        command. For example, to wait for replication to 3 nodes, pass
+        ``w=3``.
+        
+        :Parameters:
+          - `doc_or_docs`: a document or list of documents to be
+            inserted
+          - `manipulate` (optional): manipulate the documents before
+            inserting?
+          - `safe` (optional): check that the insert succeeded?
+          - `check_keys` (optional): check if keys start with '$' or
+            contain '.', raising :class:`~pymongo.errors.InvalidName`
+            in either case
+          - `**kwargs` (optional): any additional arguments imply
+            ``safe=True``, and will be used as options for the
+            `getLastError` command
+        
+        .. mongodoc:: insert
+        """
+        if not isinstance(safe, bool):
+            raise TypeError("safe must be an instance of bool")
+        if not callable(callback):
+            raise TypeError("callback must be callable")
+        if self.callback is not None:
+            raise ProgrammingError("connection already in use")
+        self.callback = callback
+        
+        docs = doc_or_docs
+        # return_one = False
+        if isinstance(docs, dict):
+            # return_one = True
+            docs = [docs]
+        
+        # if manipulate:
+        #     docs = [self.__database._fix_incoming(doc, self) for doc in docs]
+        
+        if kwargs:
+            safe = True
+        
+        # TODO: do this callback error handling elsewhere
+        try:
+            self.__id = self._connection.send_message(
+                message.insert(self.full_collection_name, docs,
+                               check_keys, safe, kwargs), callback=self._handle_response)
+        except Exception, e:
+            logging.error(e)
+            self.callback(None, error=e)
+            self.callback=None
+    
+    def remove(self, spec_or_id=None, safe=False, callback=None, **kwargs):
+        if not isinstance(safe, bool):
+            raise TypeError("safe must be an instance of bool")
+        if not callable(callback):
+            raise TypeError("callback must be callable")
+        if self.callback is not None:
+            raise ProgrammingError("connection already in use")
+        self.callback = callback
+        
+        if spec_or_id is None:
+            spec_or_id = {}
+        if not isinstance(spec_or_id, dict):
+            spec_or_id = {"_id": spec_or_id}
+        
+        if kwargs:
+            safe = True
+        
+        self.__id = self._connection.send_message(
+            message.delete(self.full_collection_name, spec_or_id, safe, kwargs),
+            callback=self._handle_response)
+
+    
+    def update(self, spec, document, upsert=False, manipulate=False,
+               safe=False, multi=False, callback=None, **kwargs):
+        """Update a document(s) in this collection.
+        
+        Raises :class:`TypeError` if either `spec` or `document` is
+        not an instance of ``dict`` or `upsert` is not an instance of
+        ``bool``. If `safe` is ``True`` then the update will be
+        checked for errors, raising
+        :class:`~pymongo.errors.OperationFailure` if one
+        occurred. Safe updates require a response from the database,
+        while normal updates do not - thus, setting `safe` to ``True``
+        will negatively impact performance.
+        
+        There are many useful `update modifiers`_ which can be used
+        when performing updates. For example, here we use the
+        ``"$set"`` modifier to modify some fields in a matching
+        document:
+        
+        .. doctest::
+          
+          >>> db.test.insert({"x": "y", "a": "b"})
+          ObjectId('...')
+          >>> list(db.test.find())
+          [{u'a': u'b', u'x': u'y', u'_id': ObjectId('...')}]
+          >>> db.test.update({"x": "y"}, {"$set": {"a": "c"}})
+          >>> list(db.test.find())
+          [{u'a': u'c', u'x': u'y', u'_id': ObjectId('...')}]
+        
+        If `safe` is ``True`` returns the response to the *lastError*
+        command. Otherwise, returns ``None``.
+        
+        # Any additional keyword arguments imply ``safe=True``, and will
+        # be used as options for the resultant `getLastError`
+        # command. For example, to wait for replication to 3 nodes, pass
+        # ``w=3``.
+        
+        :Parameters:
+          - `spec`: a ``dict`` or :class:`~bson.son.SON` instance
+            specifying elements which must be present for a document
+            to be updated
+          - `document`: a ``dict`` or :class:`~bson.son.SON`
+            instance specifying the document to be used for the update
+            or (in the case of an upsert) insert - see docs on MongoDB
+            `update modifiers`_
+          - `upsert` (optional): perform an upsert if ``True``
+          - `manipulate` (optional): manipulate the document before
+            updating? If ``True`` all instances of
+            :mod:`~pymongo.son_manipulator.SONManipulator` added to
+            this :class:`~pymongo.database.Database` will be applied
+            to the document before performing the update.
+          - `safe` (optional): check that the update succeeded?
+          - `multi` (optional): update all documents that match
+            `spec`, rather than just the first matching document. The
+            default value for `multi` is currently ``False``, but this
+            might eventually change to ``True``. It is recommended
+            that you specify this argument explicitly for all update
+            operations in order to prepare your code for that change.
+          - `**kwargs` (optional): any additional arguments imply
+            ``safe=True``, and will be used as options for the
+            `getLastError` command
+        
+        .. _update modifiers: http://www.mongodb.org/display/DOCS/Updating
+        
+        .. mongodoc:: update
+        """
+        if not isinstance(spec, dict):
+            raise TypeError("spec must be an instance of dict")
+        if not isinstance(document, dict):
+            raise TypeError("document must be an instance of dict")
+        if not isinstance(upsert, bool):
+            raise TypeError("upsert must be an instance of bool")
+        if not isinstance(safe, bool):
+            raise TypeError("safe must be an instance of bool")
+        if not callable(callback):
+            raise TypeError("callback must be callable")
+        if self.callback is not None:
+            raise ProgrammingError("connection already in use")
+        self.callback = callback
+        
+        # TODO: apply SON manipulators
+        # if upsert and manipulate:
+        #     document = self.__database._fix_incoming(document, self)
+        
+        self.__id = self._connection.send_message(
+            message.update(self.full_collection_name, upsert, multi,
+                          spec, document, safe, kwargs), callback=self._handle_response)
+
     
     def find_one(self, spec_or_id, **kwargs):
         """Get a single document from the database.
-
+        
         All arguments to :meth:`find` are also valid arguments for
         :meth:`find_one`, although any `limit` argument will be
         ignored. Returns a single document, or ``None`` if no matching
@@ -40,8 +222,8 @@ class Cursor(object):
     
     def find(self, spec=None, fields=None, skip=0, limit=0,
                  timeout=True, snapshot=False, tailable=False, sort=None,
-                 max_scan=None, 
-                 _must_use_master=False, _is_command=False, 
+                 max_scan=None,
+                 _must_use_master=False, _is_command=False,
                  callback=None):
         """Query the database.
         
@@ -58,7 +240,7 @@ class Cursor(object):
         down on network traffic and decoding time.
         
         Raises :class:`TypeError` if any of the arguments are of
-        improper type. 
+        improper type.
         
         :Parameters:
           - `spec` (optional): a SON object specifying elements which
@@ -98,10 +280,10 @@ class Cursor(object):
         
         .. mongodoc:: find
         """
-         
+        
         if spec is None:
             spec = {}
-
+        
         if not isinstance(spec, dict):
             raise TypeError("spec must be an instance of dict")
         if not isinstance(skip, int):
@@ -116,6 +298,9 @@ class Cursor(object):
             raise TypeError("tailable must be an instance of bool")
         if not callable(callback):
             raise TypeError("callback must be callable")
+        if self.callback is not None:
+            raise ProgrammingError("connection already in use")
+        self.callback = callback
         
         if fields is not None:
             if not fields:
@@ -141,7 +326,6 @@ class Cursor(object):
         self.__must_use_master = _must_use_master
         self.__is_command = False # _is_commandf
         
-        self.callback = callback
         self.__id = self._connection.send_message(
             message.query(self.__query_options(),
                           self.full_collection_name,
@@ -151,7 +335,9 @@ class Cursor(object):
     def _handle_response(self, result):
         logging.info('%r' % result)
         # {'cursor_id': 0, 'data': [], 'number_returned': 0, 'starting_from': 0}
-        self.callback(result['data'])
+        # TODO: wrap this in a functools.partial
+        # TODO: return the full mapping?
+        self.callback(result['data'], error=None)
         self.callback = None
         # TODO: handle get_more; iteration of data
         # if self.__more_data:

@@ -6,6 +6,8 @@ import helpers
 import struct
 import logging
 
+from errors import DataError
+
 # The mongo wire protocol is described at
 # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol
 
@@ -37,6 +39,25 @@ class Connection(object):
         pass
     
     def cursor(self, name):
+        """Get a cursor to a collection by name.
+
+        raises `DataError` on names with unallowable characters.
+
+        :Parameters:
+          - `name`: the name of the collection
+        """
+        if not name or ".." in name:
+            raise DataError("collection names cannot be empty")
+        if "$" in name and not (name.startswith("oplog.$main") or
+                                name.startswith("$cmd")):
+            raise DataError("collection names must not "
+                              "contain '$': %r" % name)
+        if name.startswith(".") or name.endswith("."):
+            raise DataError("collecion names must not start "
+                            "or end with '.': %r" % name)
+        if "\x00" in name:
+            raise DataError("collection names must not contain the "
+                              "null character")
         return cursor.Cursor(self, self.__dbname, name)
 
     def threadsafety(self):
@@ -51,14 +72,14 @@ class Connection(object):
         :Parameters:
           - `name`: the name of the collection
         """
-        return cursor.Cursor(self, self.__dbname, name)
+        return self.cursor(name)
 
     def __getitem__(self, name):
         """Get a collection by name.
         :Parameters:
           - `name`: the name of the collection to get
         """
-        return self.__getattr__(name)
+        return self.cursor(name)
         
     def send_message(self, message, callback):
         # TODO: handle reconnect

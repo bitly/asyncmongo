@@ -11,7 +11,8 @@ class Handler(tornado.web.RequestHandler):
         return self._db
     
     def get(self):
-        self.db.history.users.find({'username': self.current_user}, limit=1, callback=self._on_response)
+        cursor = self.db.cursor("history")
+        cursor.users.find({'username': self.current_user}, limit=1, callback=self._on_response)
     
     def _on_response(self, response):
         self.render('template', full_name=respose['full_name'])
