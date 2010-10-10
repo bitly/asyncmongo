@@ -1,7 +1,7 @@
 import os
 from distutils.core import setup
 
-version = '0.0.1'
+version = '0.0.2'
 
 setup(
     name="asyncmongo",
@@ -14,5 +14,5 @@ setup(
     url="http://github.com/bitly/asyncmongo",
     packages=['asyncmongo'],
     requires=['pymongo (>=1.9)', 'tornado'],
-    download_url="http://github.com/downloads/bitly/asyncmongo/asyncmongo-%s.tar.gz" % version,
+    # download_url="http://github.com/downloads/bitly/asyncmongo/asyncmongo-%s.tar.gz" % version,
 )

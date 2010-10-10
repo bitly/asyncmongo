@@ -36,10 +36,6 @@ Usage
 About
 -----
 
-`DBUtils.PooledDB` gives a good interface for pooling connections. `dedicated_connection()` gives a cursor back that will be released when it's not referenced anymore (normally at the end of the request), but if you need to make multiple queries you need to manage cursors individually or don't make simultaneous mongo queries.
-
-`asyncmongo` connections are DB API v2 compliant which allows them to be used with DB Pooling libraries like `DBUtils` however because of their asynchronous nature care must be given to connection re-use beyond the normal threadsafety.
-
 Features not supported: some features from pymongo are not currently implemented: namely directly interfacing with indexes, dropping collections, and retrieving results in batches instead of all at once. (asyncmongo's nature means that no calls are blocking regardless of the number of results you are retrieving)
 
 Requirements

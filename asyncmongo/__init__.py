@@ -1,7 +1,7 @@
 """
 asyncmongo is a library for accessing tornado built built upon the tornado io loop
 """
-version = "0.0.1"
+version = "0.0.2"
 
 ASCENDING = 1
 """Ascending sort order."""
