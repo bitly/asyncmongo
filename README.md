@@ -14,16 +14,16 @@ Usage
 
     import asyncmongo
     import tornado.web
-    from DBUtils import PooledDB
-    db_pool = PooledDB.PooledDB(asyncmongo, host='127.0.0.1', port=27107, dbname='test', maxconnections=50)
+    db_pool = asyncmongo.PooledDB(asyncmongo, host='127.0.0.1', port=27107, dbname='test', maxconnections=50)
 
     class Handler(tornado.web.RequestHandler):
         @property
         def db(self):
             if not hasattr(self, '_db'):
-                self._db = db_pool.dedicated_connection()
+                self._db = db_pool.connection()
             return self._db
     
+        @tornado.web.asynchronous
         def get(self):
             cursor = self.db.cursor("users_collection")
             cursor.users.find({'username': self.current_user}, limit=1, callback=self._on_response)

@@ -1,4 +1,3 @@
-from DBUtils import PooledDB
 import tornado.ioloop
 import logging
 import time
@@ -12,10 +11,11 @@ def test_pooled_db():
     This tests simply verifies that we can grab two different connections from the pool
     and use them independantly.
     """
+    print asyncmongo.__file__
     test_shunt.setup()
-    pool = PooledDB.PooledDB(asyncmongo, maxconnections=5, host='127.0.0.1', port=27017, dbname='test')
+    pool = asyncmongo.PooledDB(asyncmongo, maxconnections=5, host='127.0.0.1', port=27017, dbname='test')
 
-    db = pool.dedicated_connection()
+    db = pool.connection()
     cursor = db.cursor('test_users')
     
     def insert_callback(response, error):
@@ -30,7 +30,7 @@ def test_pooled_db():
     test_shunt.assert_called('inserted')
     
     
-    db2 = pool.dedicated_connection()
+    db2 = pool.connection()
     cursor2 = db2.cursor('test_users')
 
     def pool_callback(response, error):

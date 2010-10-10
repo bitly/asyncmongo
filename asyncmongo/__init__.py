@@ -1,22 +1,5 @@
 """
-import asyncmongo
-from DBUtils import PooledDB
-db_pool = PooledDB.PooledDB(asyncmongo, host='127.0.0.1', port=27107, dbname='test', maxconnections=50)
-
-class Handler(tornado.web.RequestHandler):
-    @property
-    def db(self):
-        if not hasattr(self, '_db'):
-            self._db = db_pool.dedicated_connection()
-        return self._db
-    
-    def get(self):
-        cursor = self.db.cursor("history")
-        cursor.users.find({'username': self.current_user}, limit=1, callback=self._on_response)
-    
-    def _on_response(self, response):
-        self.render('template', full_name=respose['full_name'])
-
+asyncmongo is a library for accessing tornado built built upon the tornado io loop
 """
 version = "0.0.1"
 
@@ -31,7 +14,10 @@ GEO2D = "2d"
 apilevel = 2
 threadsafety = 1 # share the module, not connections
 
+from errors import Warning, Error, InterfaceError, DatabaseError, DataError, OperationalError, IntegrityError, InternalError, ProgrammingError, NotSupportedError
 
 from connection import Connection
 def connect(*args, **kwargs):
     return Connection(*args, **kwargs)
+
+from pool import PooledDB

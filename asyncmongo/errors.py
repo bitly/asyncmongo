@@ -49,3 +49,9 @@ class ProgrammingError(DatabaseError):
 
 class NotSupportedError(DatabaseError):
     pass
+
+class TooManyConnections(Error):
+    pass
+
+class InvalidConnection(DatabaseError):
+    pass

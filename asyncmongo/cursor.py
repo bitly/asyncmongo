@@ -84,18 +84,19 @@ class Cursor(object):
         # if manipulate:
         #     docs = [self.__database._fix_incoming(doc, self) for doc in docs]
         
+        self.__limit = None
         if kwargs:
             safe = True
         
         # TODO: do this callback error handling elsewhere
-        try:
-            self.__id = self._connection.send_message(
-                message.insert(self.full_collection_name, docs,
-                               check_keys, safe, kwargs), callback=self._handle_response)
-        except Exception, e:
-            logging.error(e)
-            self.callback(None, error=e)
-            self.callback=None
+        # try:
+        self.__id = self._connection.send_message(
+            message.insert(self.full_collection_name, docs,
+                           check_keys, safe, kwargs), callback=self._handle_response)
+        # except Exception, e:
+        #     logging.error(e)
+        #     self.callback(None, error=e)
+        #     self.callback=None
     
     def remove(self, spec_or_id=None, safe=False, callback=None, **kwargs):
         if not isinstance(safe, bool):
@@ -111,6 +112,7 @@ class Cursor(object):
         if not isinstance(spec_or_id, dict):
             spec_or_id = {"_id": spec_or_id}
         
+        self.__limit = None
         if kwargs:
             safe = True
         
@@ -338,7 +340,10 @@ class Cursor(object):
             self.callback(None, error=error)
         else:
             logging.info('%s %r' % (self.full_collection_name , result))
-            self.callback(result['data'], error=None)
+            if self.__limit == -1 and len(result['data']) == 1:
+                self.callback(result['data'][0], error=None)
+            else:
+                self.callback(result['data'], error=None)
         self.callback = None
     
     def __query_options(self):
