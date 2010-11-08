@@ -1,7 +1,7 @@
 import os
 from distutils.core import setup
 
-version = '0.0.2'
+version = '0.0.3'
 
 setup(
     name="asyncmongo",

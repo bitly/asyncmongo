@@ -91,14 +91,14 @@ class PooledConnection(object):
         """
         self._pool = pool
         self._con = con
-        logging.info('returning connection %d' % id(con))
+        # logging.info('returning connection %d' % id(con))
 
     def close(self):
         """Close the pooled dedicated connection."""
         # Instead of actually closing the connection,
         # return it to the pool for future reuse.
         if self._con:
-            logging.info('putting conn %d back in pool' % id(self._con))
+            # logging.info('putting conn %d back in pool' % id(self._con))
             self._pool.cache(self._con)
             self._con = None
 

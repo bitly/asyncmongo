@@ -343,7 +343,7 @@ class Cursor(object):
                 logging.error('%s %s' % (self.full_collection_name , error))
                 self.callback(None, error=error)
             else:
-                logging.info('%s %r' % (self.full_collection_name , result))
+                # logging.info('%s %r' % (self.full_collection_name , result))
                 if self.__limit == -1 and len(result['data']) == 1:
                     self.callback(result['data'][0], error=None)
                 else:
