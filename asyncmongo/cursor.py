@@ -13,7 +13,7 @@ _QUERY_OPTIONS = {
     "no_timeout": 16}
 
 class Cursor(object):
-    def __init__(self, connection, dbname, collection):
+    def __init__(self, connection, dbname, collection, pool=None):
         assert isinstance(connection, object)
         assert isinstance(dbname, (str, unicode))
         assert isinstance(collection, (str, unicode))
@@ -21,6 +21,9 @@ class Cursor(object):
         self._connection = connection
         self.__dbname = dbname
         self.__collection = collection
+        if pool:
+            assert isinstance(pool, object)
+            self.__pool = pool
         self.callback = None
     
     @property

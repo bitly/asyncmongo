@@ -26,6 +26,7 @@ class Connection(object):
         self.__alive = False
         self.__connect()
         self.__autoreconnect = autoreconnect
+        self.__pool = None
     
     def __connect(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
@@ -43,7 +44,7 @@ class Connection(object):
     def rollback(self):
         pass
     
-    def cursor(self, name):
+    def cursor(self, name, pool=None):
         """Get a cursor to a collection by name.
 
         raises `DataError` on names with unallowable characters.
@@ -63,7 +64,7 @@ class Connection(object):
         if "\x00" in name:
             raise DataError("collection names must not contain the "
                               "null character")
-        return cursor.Cursor(self, self.__dbname, name)
+        return cursor.Cursor(self, self.__dbname, name, pool)
 
     def threadsafety(self):
         return 2
@@ -78,14 +79,14 @@ class Connection(object):
         :Parameters:
           - `name`: the name of the collection
         """
-        return self.cursor(name)
+        return self.cursor(name, self)
 
     def __getitem__(self, name):
         """Get a collection by name.
         :Parameters:
           - `name`: the name of the collection to get
         """
-        return self.cursor(name)
+        return self.cursor(name, self)
         
     def send_message(self, message, callback):
         # TODO: handle reconnect
