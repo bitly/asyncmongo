@@ -335,15 +335,18 @@ class Cursor(object):
                           self.__query_spec(), self.__fields), callback=self._handle_response)
     
     def _handle_response(self, result, error=None):
-        if error:
-            logging.error('%s %s' % (self.full_collection_name , error))
-            self.callback(None, error=error)
-        else:
-            logging.info('%s %r' % (self.full_collection_name , result))
-            if self.__limit == -1 and len(result['data']) == 1:
-                self.callback(result['data'][0], error=None)
+        try:
+            if error:
+                logging.error('%s %s' % (self.full_collection_name , error))
+                self.callback(None, error=error)
             else:
-                self.callback(result['data'], error=None)
+                logging.info('%s %r' % (self.full_collection_name , result))
+                if self.__limit == -1 and len(result['data']) == 1:
+                    self.callback(result['data'][0], error=None)
+                else:
+                    self.callback(result['data'], error=None)
+        except:
+            logging.exception('callback failed')
         self.callback = None
     
     def __query_options(self):
