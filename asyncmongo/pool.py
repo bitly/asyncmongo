@@ -15,7 +15,7 @@ class ConnectionPools(object):
 
 class ConnectionPool(object):
     def __init__(self, mincached=0, maxcached=0, 
-                maxconnections=0, maxusage=None, blocking=True, dbname=None, *args, **kwargs):
+                maxconnections=0, maxusage=None, dbname=None, *args, **kwargs):
         self._args, self._kwargs = args, kwargs
         # self._maxusage = maxusage
         self._mincached = mincached
@@ -24,10 +24,9 @@ class ConnectionPool(object):
         self._idle_cache = [] # the actual connections
         self._condition = Condition()
         self._dbname = dbname
-        if not blocking:
-            def wait():
-                raise TooManyConnections
-            self._condition.wait = wait
+        def wait():
+            raise TooManyConnections
+        self._condition.wait = wait
         # Establish an initial number of idle database connections:
         idle = [self.dedicated_connection() for i in range(mincached)]
         while idle:
