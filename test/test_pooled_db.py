@@ -13,10 +13,8 @@ def test_pooled_db():
     """
     print asyncmongo.__file__
     test_shunt.setup()
-    pool = asyncmongo.PooledDB(asyncmongo, maxconnections=5, host='127.0.0.1', port=27017, dbname='test')
-
-    db = pool.connection()
-    cursor = db.cursor('test_users')
+    client = asyncmongo.Client('id1', maxconnections=5, host='127.0.0.1', port=27017, dbname='test')
+    test_users_collection = client.connection('test_users')
     
     def insert_callback(response, error):
         logging.info(response)
@@ -24,15 +22,11 @@ def test_pooled_db():
         test_shunt.register_called('inserted')
         tornado.ioloop.IOLoop.instance().stop()
     
-    cursor.insert({"_id" : "record_test.%d" % TEST_TIMESTAMP}, safe=True, callback=insert_callback)
+    test_users_collection.insert({"_id" : "record_test.%d" % TEST_TIMESTAMP}, safe=True, callback=insert_callback)
     
     tornado.ioloop.IOLoop.instance().start()
     test_shunt.assert_called('inserted')
     
-    
-    db2 = pool.connection()
-    cursor2 = db2.cursor('test_users')
-
     def pool_callback(response, error):
         assert len(response) == 1
         test_shunt.register_called('pool1')
@@ -47,8 +41,8 @@ def test_pooled_db():
             # don't expect 2 finishes second
             tornado.ioloop.IOLoop.instance().stop()
     
-    cursor.find({}, limit=1, callback=pool_callback)
-    cursor2.find({}, limit=1, callback=pool_callback2)
+    test_users_collection.find({}, limit=1, callback=pool_callback)
+    test_users_collection.find({}, limit=1, callback=pool_callback2)
     
     tornado.ioloop.IOLoop.instance().start()
     test_shunt.assert_called('pool1')

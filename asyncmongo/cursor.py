@@ -4,7 +4,7 @@ import logging
 
 import helpers
 import message
-from errors import ProgrammingError
+import functools
 
 _QUERY_OPTIONS = {
     "tailable_cursor": 2,
@@ -13,19 +13,31 @@ _QUERY_OPTIONS = {
     "no_timeout": 16}
 
 class Cursor(object):
-    def __init__(self, connection, dbname, collection, pool=None):
-        assert isinstance(connection, object)
+    """ Cursor is a class used to call oeprations on a given db/collection using a specific connection pool.
+        it will transparently release connections back to the pool after they receive responses
+    """
+    def __init__(self, dbname, collection, pool):
         assert isinstance(dbname, (str, unicode))
         assert isinstance(collection, (str, unicode))
+        assert isinstance(pool, object)
         
-        self._connection = connection
         self.__dbname = dbname
         self.__collection = collection
-        if pool:
-            assert isinstance(pool, object)
-            self.__pool = pool
-        self.callback = None
+        self.__pool = pool
     
+    def async_callback(self, callback, *args, **kwargs):
+        if callback is None:
+            return None
+        if args or kwargs:
+            callback = functools.partial(callback, *args, **kwargs)
+        def wrapper(*args, **kwargs):
+            try:
+                return callback(*args, **kwargs)
+            except Exception, e:
+                logging.error("Exception in callback",
+                              exc_info=True)
+        return wrapper
+            
     @property
     def full_collection_name(self):
         return u'%s.%s' % (self.__dbname, self.__collection)
@@ -74,9 +86,6 @@ class Cursor(object):
             raise TypeError("safe must be an instance of bool")
         if not callable(callback):
             raise TypeError("callback must be callable")
-        if self.callback is not None:
-            raise ProgrammingError("connection already in use")
-        self.callback = callback
         
         docs = doc_or_docs
         # return_one = False
@@ -93,9 +102,10 @@ class Cursor(object):
         
         # TODO: do this callback error handling elsewhere
         # try:
-        self.__id = self._connection.send_message(
+        connection = self.__pool.connection()
+        connection.send_message(
             message.insert(self.full_collection_name, docs,
-                           check_keys, safe, kwargs), callback=self._handle_response)
+                           check_keys, safe, kwargs), callback=self.async_callback(self._handle_response, orig_callback=callback))
         # except Exception, e:
         #     logging.error(e)
         #     self.callback(None, error=e)
@@ -106,9 +116,6 @@ class Cursor(object):
             raise TypeError("safe must be an instance of bool")
         if not callable(callback):
             raise TypeError("callback must be callable")
-        if self.callback is not None:
-            raise ProgrammingError("connection already in use")
-        self.callback = callback
         
         if spec_or_id is None:
             spec_or_id = {}
@@ -119,9 +126,10 @@ class Cursor(object):
         if kwargs:
             safe = True
         
-        self.__id = self._connection.send_message(
+        connection = self.__pool.connection()
+        connection.send_message(
             message.delete(self.full_collection_name, spec_or_id, safe, kwargs),
-            callback=self._handle_response)
+            callback=self.async_callback(self._handle_response, orig_callback=callback))
 
     
     def update(self, spec, document, upsert=False, manipulate=False,
@@ -199,17 +207,15 @@ class Cursor(object):
             raise TypeError("safe must be an instance of bool")
         if not callable(callback):
             raise TypeError("callback must be callable")
-        if self.callback is not None:
-            raise ProgrammingError("connection already in use")
-        self.callback = callback
         
         # TODO: apply SON manipulators
         # if upsert and manipulate:
         #     document = self.__database._fix_incoming(document, self)
         
-        self.__id = self._connection.send_message(
+        connection = self.__pool.connection()
+        connection.send_message(
             message.update(self.full_collection_name, upsert, multi,
-                          spec, document, safe, kwargs), callback=self._handle_response)
+                          spec, document, safe, kwargs), callback=self.async_callback(self._handle_response, orig_callback=callback))
 
     
     def find_one(self, spec_or_id, **kwargs):
@@ -303,9 +309,6 @@ class Cursor(object):
             raise TypeError("tailable must be an instance of bool")
         if not callable(callback):
             raise TypeError("callback must be callable")
-        if self.callback is not None:
-            raise ProgrammingError("connection already in use")
-        self.callback = callback
         
         if fields is not None:
             if not fields:
@@ -331,26 +334,26 @@ class Cursor(object):
         self.__must_use_master = _must_use_master
         self.__is_command = False # _is_commandf
         
-        self.__id = self._connection.send_message(
+        connection = self.__pool.connection()
+        connection.send_message(
             message.query(self.__query_options(),
                           self.full_collection_name,
                           self.__skip, self.__limit,
-                          self.__query_spec(), self.__fields), callback=self._handle_response)
+                          self.__query_spec(), self.__fields), callback=self.async_callback(self._handle_response, orig_callback=callback))
     
-    def _handle_response(self, result, error=None):
+    def _handle_response(self, result, orig_callback, error=None):
         try:
             if error:
                 logging.error('%s %s' % (self.full_collection_name , error))
-                self.callback(None, error=error)
+                orig_callback(None, error=error)
             else:
                 # logging.info('%s %r' % (self.full_collection_name , result))
                 if self.__limit == -1 and len(result['data']) == 1:
-                    self.callback(result['data'][0], error=None)
+                    orig_callback(result['data'][0], error=None)
                 else:
-                    self.callback(result['data'], error=None)
+                    orig_callback(result['data'], error=None)
         except:
             logging.exception('callback failed')
-        self.callback = None
     
     def __query_options(self):
         """Get the query options string to use for this query.

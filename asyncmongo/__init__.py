@@ -10,14 +10,6 @@ DESCENDING = -1
 GEO2D = "2d"
 """Index specifier for a 2-dimensional `geospatial index`"""
 
-# DBAPI v2 variables
-apilevel = 2
-threadsafety = 1 # share the module, not connections
-
 from errors import Warning, Error, InterfaceError, DatabaseError, DataError, OperationalError, IntegrityError, InternalError, ProgrammingError, NotSupportedError
 
-from connection import Connection
-def connect(*args, **kwargs):
-    return Connection(*args, **kwargs)
-
-from pool import PooledDB
+from client import Client
