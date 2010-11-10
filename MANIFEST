@@ -3,6 +3,7 @@ README.md
 asyncmongo/__init__.py
 asyncmongo/connection.py
 asyncmongo/cursor.py
+asyncmongo/client.py
 asyncmongo/errors.py
 asyncmongo/helpers.py
 asyncmongo/message.py
