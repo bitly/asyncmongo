@@ -1,6 +1,22 @@
+#!/bin/env python
+# 
+# Copyright 2010 bit.ly
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+
 from threading import Condition
 import logging
-from errors import TooManyConnections
+from errors import TooManyConnections, ProgrammingError
 from connection import Connection
 
 class ConnectionPools(object):
@@ -14,8 +30,22 @@ class ConnectionPools(object):
         if pool_id not in self._pools:
             self._pools[pool_id] = ConnectionPool(*args, **kwargs)
         return self._pools[pool_id]
+    
+    @classmethod
+    def close_idle_connections(self, pool_id=None):
+        """close idle connections to mongo"""
+        if pool_id:
+            if pool_id not in self._pools:
+                raise ProgrammingError("pool %r does not exist" % pool_id)
+            else:
+                pool = self._pools[pool_id]
+                pool.close()
+        else:
+            for pool in self._pools.items():
+                pool.close()
 
 class ConnectionPool(object):
+    """Connection Pool to a single mongo instance."""
     def __init__(self, mincached=0, maxcached=0, 
                 maxconnections=0, maxusage=0, dbname=None, *args, **kwargs):
         assert isinstance(mincached, int)
@@ -98,12 +128,5 @@ class ConnectionPool(object):
             self._condition.notifyAll()
         finally:
             self._condition.release()
-    
-    # def __del__(self):
-    #     """Delete the pool."""
-    #     try:
-    #         self.close()
-    #     except Exception:
-    #         pass
     
 
