@@ -341,7 +341,7 @@ class Cursor(object):
                           self.__skip, self.__limit,
                           self.__query_spec(), self.__fields), callback=self.async_callback(self._handle_response, orig_callback=callback))
     
-    def _handle_response(self, result, orig_callback, error=None):
+    def _handle_response(self, result, error=None, orig_callback=None):
         try:
             if error:
                 logging.error('%s %s' % (self.full_collection_name , error))
