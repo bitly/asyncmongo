@@ -2,7 +2,7 @@
 import bson
 from bson.son import SON
 import struct
-import asyncmongo
+from asyncmongo import ASCENDING, DESCENDING, GEO2D
 from asyncmongo.errors import (DatabaseError, InterfaceError)
 
 
@@ -73,7 +73,7 @@ def _index_document(index_list):
     for (key, value) in index_list:
         if not isinstance(key, basestring):
             raise TypeError("first item in each key pair must be a string")
-        if value not in [asyncmongo.ASCENDING, asyncmongo.DESCENDING, asyncmongo.GEO2D]:
+        if value not in [ASCENDING, DESCENDING, GEO2D]:
             raise TypeError("second item in each key pair must be ASCENDING, "
                             "DESCENDING, or GEO2D")
         index[key] = value

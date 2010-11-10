@@ -26,8 +26,8 @@ Usage
         def get(self):
             self.db.users.find({'username': self.current_user}, limit=1, callback=self._on_response)
             # or
-            # conn = self.db.connection(collection=?, db=?)
-            # conn.find(...)
+            # conn = self.db.connection(collectionname="...", dbname="...")
+            # conn.find(..., callback=self._on_response)
     
         def _on_response(self, response, error):
             if error:

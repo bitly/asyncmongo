@@ -100,16 +100,10 @@ class Cursor(object):
         if kwargs:
             safe = True
         
-        # TODO: do this callback error handling elsewhere
-        # try:
         connection = self.__pool.connection()
         connection.send_message(
             message.insert(self.full_collection_name, docs,
                            check_keys, safe, kwargs), callback=self.async_callback(self._handle_response, orig_callback=callback))
-        # except Exception, e:
-        #     logging.error(e)
-        #     self.callback(None, error=e)
-        #     self.callback=None
     
     def remove(self, spec_or_id=None, safe=False, callback=None, **kwargs):
         if not isinstance(safe, bool):
@@ -347,8 +341,8 @@ class Cursor(object):
                 logging.error('%s %s' % (self.full_collection_name , error))
                 orig_callback(None, error=error)
             else:
-                # logging.info('%s %r' % (self.full_collection_name , result))
                 if self.__limit == -1 and len(result['data']) == 1:
+                    # handle the find_one() call
                     orig_callback(result['data'][0], error=None)
                 else:
                     orig_callback(result['data'], error=None)
@@ -356,8 +350,7 @@ class Cursor(object):
             logging.exception('callback failed')
     
     def __query_options(self):
-        """Get the query options string to use for this query.
-        """
+        """Get the query options string to use for this query."""
         options = 0
         if self.__tailable:
             options |= _QUERY_OPTIONS["tailable_cursor"]
@@ -368,8 +361,7 @@ class Cursor(object):
         return options
     
     def __query_spec(self):
-        """Get the spec to use for a query.
-        """
+        """Get the spec to use for a query."""
         spec = self.__spec
         if not self.__is_command and "$query" not in self.__spec:
             spec = SON({"$query": self.__spec})

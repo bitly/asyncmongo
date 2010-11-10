@@ -1,7 +1,10 @@
 """
-asyncmongo is a library for accessing tornado built built upon the tornado io loop
+AsyncMongo is an asynchronous library for accessing mongo 
+which is built on the tornado ioloop.
+
+http://github.com/bitly/asyncmongo
 """
-version = "0.0.2"
+version = "0.0.4"
 
 ASCENDING = 1
 """Ascending sort order."""
@@ -10,6 +13,6 @@ DESCENDING = -1
 GEO2D = "2d"
 """Index specifier for a 2-dimensional `geospatial index`"""
 
-from errors import Warning, Error, InterfaceError, DatabaseError, DataError, OperationalError, IntegrityError, InternalError, ProgrammingError, NotSupportedError
+from errors import Error, InterfaceError, DatabaseError, DataError, IntegrityError, ProgrammingError, NotSupportedError
 
 from client import Client

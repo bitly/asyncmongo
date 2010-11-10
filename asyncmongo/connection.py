@@ -26,6 +26,7 @@ class Connection(object):
         self.__connect()
         self.__autoreconnect = autoreconnect
         self.__pool = pool
+        self.usage_count = 0
     
     def __connect(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
@@ -42,6 +43,7 @@ class Connection(object):
         self.__stream.close()
     
     def send_message(self, message, callback):
+        self.usage_count +=1
         # TODO: handle reconnect
         if self.__callback is not None:
             raise ProgrammingError('connection already in use')
