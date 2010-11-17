@@ -2,7 +2,7 @@ import os
 from distutils.core import setup
 
 # also update version in __init__.py
-version = '0.0.4'
+version = '0.1'
 
 setup(
     name="asyncmongo",
@@ -11,9 +11,9 @@ setup(
     long_description=open(os.path.join(os.path.dirname(__file__),"README.md"), "r").read(),
     description="Asyncronus library for accessing mongodb built upon the tornado IOLoop.",
     author="Jehiah Czebotar",
-    author_email="jehiah@bit.ly",
+    author_email="jehiah@gmail.com",
     url="http://github.com/bitly/asyncmongo",
     packages=['asyncmongo'],
     requires=['pymongo (>=1.9)', 'tornado'],
-    # download_url="http://github.com/downloads/bitly/asyncmongo/asyncmongo-%s.tar.gz" % version,
+    download_url="http://github.com/downloads/bitly/asyncmongo/asyncmongo-%s.tar.gz" % version,
 )
