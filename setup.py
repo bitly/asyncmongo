@@ -9,7 +9,7 @@ setup(
     version=version,
     keywords=["mongo", "mongodb", "pymongo", "asyncmongo", "tornado"],
     long_description=open(os.path.join(os.path.dirname(__file__),"README.md"), "r").read(),
-    description="Asyncronus library for accessing mongodb built upon the tornado IOLoop.",
+    description="Asynchronous library for accessing mongodb built upon the tornado IOLoop.",
     author="Jehiah Czebotar",
     author_email="jehiah@gmail.com",
     url="http://github.com/bitly/asyncmongo",
