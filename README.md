@@ -7,11 +7,11 @@ which is built on the tornado ioloop.
 Installation
 ------------
 
-    Installing: `pip install data_hacks`
+Installing: `pip install asyncmongo`
 
-    Installing form github: `pip install -e git://github.com/bitly/asyncmongo.git#egg=asyncmongo`
+Installing form github: `pip install -e git://github.com/bitly/asyncmongo.git#egg=asyncmongo`
 
-    Installing from source: `git clone git://github.com/bitly/asyncmongo.git; cd asyncmongo; python setup.py install`
+Installing from source: `git clone git://github.com/bitly/asyncmongo.git; cd asyncmongo; python setup.py install`
 
 Usage
 -----
