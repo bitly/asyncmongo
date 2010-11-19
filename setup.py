@@ -13,6 +13,10 @@ setup(
     author="Jehiah Czebotar",
     author_email="jehiah@gmail.com",
     url="http://github.com/bitly/asyncmongo",
+    license="Apache Software License",
+    classifiers=[
+        "License :: OSI Approved :: Apache Software License",
+    ],
     packages=['asyncmongo'],
     requires=['pymongo (>=1.9)', 'tornado'],
     download_url="http://github.com/downloads/bitly/asyncmongo/asyncmongo-%s.tar.gz" % version,

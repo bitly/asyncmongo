@@ -1,4 +1,5 @@
 setup.py
+LICENSE
 README.md
 asyncmongo/__init__.py
 asyncmongo/connection.py
