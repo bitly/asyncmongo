@@ -49,11 +49,14 @@ class Connection(object):
         self.usage_count = 0
     
     def __connect(self):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-        s.connect((self.__host, self.__port))
-        self.__stream = tornado.iostream.IOStream(s)
-        self.__stream.set_close_callback(self._socket_close)
-        self.__alive = True
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+            s.connect((self.__host, self.__port))
+            self.__stream = tornado.iostream.IOStream(s)
+            self.__stream.set_close_callback(self._socket_close)
+            self.__alive = True
+        except socket.error, error:
+            raise InterfaceError(error)
     
     def _socket_close(self):
         self.__alive = False
