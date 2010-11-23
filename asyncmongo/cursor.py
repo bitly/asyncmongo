@@ -222,6 +222,7 @@ class Cursor(object):
         # if upsert and manipulate:
         #     document = self.__database._fix_incoming(document, self)
         
+        self.__limit = None
         connection = self.__pool.connection()
         connection.send_message(
             message.update(self.full_collection_name, upsert, multi,
