@@ -61,6 +61,10 @@ class Cursor(object):
     def drop(self, *args, **kwargs):
         raise NotImplemented("patches accepted")
 
+    def save(self, doc, **kwargs):
+        assert isinstance(doc, dict)
+        self.insert(doc, **kwargs)
+
     def insert(self, doc_or_docs,
                manipulate=True, safe=False, check_keys=True, callback=None, **kwargs):
         """Insert a document(s) into this collection.
