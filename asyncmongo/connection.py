@@ -87,6 +87,10 @@ class Connection(object):
             self.__stream.write(data)
             if callback:
                 self.__stream.read_bytes(16, callback=self._parse_header)
+            else:
+                self.__request_id = None
+                self.__pool.cache(self)
+                
         except IOError, e:
             self.__alive = False
             raise
