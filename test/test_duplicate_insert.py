@@ -17,7 +17,7 @@ def test_duplicate_insert():
         test_shunt.register_called('inserted')
         tornado.ioloop.IOLoop.instance().stop()
     
-    db.test_users.insert({"_id" : "duplicate_insert.%d" % TEST_TIMESTAMP}, safe=True, callback=insert_callback)
+    db.test_users.insert({"_id" : "duplicate_insert.%d" % TEST_TIMESTAMP}, callback=insert_callback)
     
     tornado.ioloop.IOLoop.instance().start()
     test_shunt.assert_called('inserted')
@@ -28,7 +28,7 @@ def test_duplicate_insert():
             test_shunt.register_called('dupe')
         tornado.ioloop.IOLoop.instance().stop()
     
-    db.test_users.insert({"_id" : "duplicate_insert.%d" % TEST_TIMESTAMP}, safe=True, callback=duplicate_callback)
+    db.test_users.insert({"_id" : "duplicate_insert.%d" % TEST_TIMESTAMP}, callback=duplicate_callback)
     
     tornado.ioloop.IOLoop.instance().start()
     test_shunt.assert_called('dupe')

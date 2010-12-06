@@ -66,7 +66,7 @@ class Cursor(object):
         self.insert(doc, **kwargs)
 
     def insert(self, doc_or_docs,
-               manipulate=True, safe=False, check_keys=True, callback=None, **kwargs):
+               manipulate=True, safe=True, check_keys=True, callback=None, **kwargs):
         """Insert a document(s) into this collection.
         
         If `manipulate` is set, the document(s) are manipulated using
@@ -104,8 +104,6 @@ class Cursor(object):
         """
         if not isinstance(safe, bool):
             raise TypeError("safe must be an instance of bool")
-        if not callable(callback):
-            raise TypeError("callback must be callable")
         
         docs = doc_or_docs
         # return_one = False
@@ -120,16 +118,22 @@ class Cursor(object):
         if kwargs:
             safe = True
         
+        if safe and not callable(callback):
+            raise TypeError("callback must be callable")
+        if not safe and callback is not None:
+            raise TypeError("callback can not be used with safe=False")
+        
+        if callback:
+            callback = self.async_callback(self._handle_response, orig_callback=callback)
+
         connection = self.__pool.connection()
         connection.send_message(
             message.insert(self.full_collection_name, docs,
-                           check_keys, safe, kwargs), callback=self.async_callback(self._handle_response, orig_callback=callback))
+                           check_keys, safe, kwargs), callback=callback)
     
-    def remove(self, spec_or_id=None, safe=False, callback=None, **kwargs):
+    def remove(self, spec_or_id=None, safe=True, callback=None, **kwargs):
         if not isinstance(safe, bool):
             raise TypeError("safe must be an instance of bool")
-        if not callable(callback):
-            raise TypeError("callback must be callable")
         
         if spec_or_id is None:
             spec_or_id = {}
@@ -140,14 +144,22 @@ class Cursor(object):
         if kwargs:
             safe = True
         
+        if safe and not callable(callback):
+            raise TypeError("callback must be callable")
+        if not safe and callback is not None:
+            raise TypeError("callback can not be used with safe=False")
+        
+        if callback:
+            callback = self.async_callback(self._handle_response, orig_callback=callback)
+
         connection = self.__pool.connection()
         connection.send_message(
             message.delete(self.full_collection_name, spec_or_id, safe, kwargs),
-            callback=self.async_callback(self._handle_response, orig_callback=callback))
+            callback=callback)
 
     
     def update(self, spec, document, upsert=False, manipulate=False,
-               safe=False, multi=False, callback=None, **kwargs):
+               safe=True, multi=False, callback=None, **kwargs):
         """Update a document(s) in this collection.
         
         Raises :class:`TypeError` if either `spec` or `document` is
@@ -219,18 +231,26 @@ class Cursor(object):
             raise TypeError("upsert must be an instance of bool")
         if not isinstance(safe, bool):
             raise TypeError("safe must be an instance of bool")
-        if not callable(callback):
-            raise TypeError("callback must be callable")
-        
         # TODO: apply SON manipulators
         # if upsert and manipulate:
         #     document = self.__database._fix_incoming(document, self)
         
+        if kwargs:
+            safe = True
+        
+        if safe and not callable(callback):
+            raise TypeError("callback must be callable")
+        if not safe and callback is not None:
+            raise TypeError("callback can not be used with safe=False")
+        
+        if callback:
+            callback = self.async_callback(self._handle_response, orig_callback=callback)
+
         self.__limit = None
         connection = self.__pool.connection()
         connection.send_message(
             message.update(self.full_collection_name, upsert, multi,
-                          spec, document, safe, kwargs), callback=self.async_callback(self._handle_response, orig_callback=callback))
+                          spec, document, safe, kwargs), callback=callback)
 
     
     def find_one(self, spec_or_id, **kwargs):

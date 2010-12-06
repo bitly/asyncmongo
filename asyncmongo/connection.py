@@ -66,6 +66,8 @@ class Connection(object):
         self.__stream.close()
     
     def send_message(self, message, callback):
+        """ send a message over the wire; callback=None indicates a safe=False call where we write and forget about it"""
+        
         self.usage_count +=1
         # TODO: handle reconnect
         if self.__callback is not None:
@@ -83,7 +85,8 @@ class Connection(object):
         # logging.info('request id %d writing %r' % (self.__request_id, data))
         try:
             self.__stream.write(data)
-            self.__stream.read_bytes(16, callback=self._parse_header)
+            if callback:
+                self.__stream.read_bytes(16, callback=self._parse_header)
         except IOError, e:
             self.__alive = False
             raise

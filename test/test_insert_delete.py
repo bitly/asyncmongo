@@ -17,7 +17,7 @@ def test_insert():
         test_shunt.register_called('inserted')
         tornado.ioloop.IOLoop.instance().stop()
     
-    db.test_users.insert({"_id" : "insert.%d" % TEST_TIMESTAMP}, safe=True, callback=insert_callback)
+    db.test_users.insert({"_id" : "insert.%d" % TEST_TIMESTAMP}, callback=insert_callback)
     
     tornado.ioloop.IOLoop.instance().start()
     test_shunt.assert_called('inserted')
@@ -39,7 +39,7 @@ def test_insert():
         test_shunt.register_called('deleted')
         tornado.ioloop.IOLoop.instance().stop()
     
-    db.test_users.remove({"_id" : "insert.%d" % TEST_TIMESTAMP}, safe=True, callback=delete_callback)
+    db.test_users.remove({"_id" : "insert.%d" % TEST_TIMESTAMP}, callback=delete_callback)
     tornado.ioloop.IOLoop.instance().start()
     test_shunt.assert_called('deleted')
 
