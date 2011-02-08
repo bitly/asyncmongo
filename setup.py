@@ -2,7 +2,7 @@ import os
 from distutils.core import setup
 
 # also update version in __init__.py
-version = '0.1.2'
+version = '0.1.3'
 
 setup(
     name="asyncmongo",
@@ -18,6 +18,7 @@ setup(
         "License :: OSI Approved :: Apache Software License",
     ],
     packages=['asyncmongo'],
+    install_requires=['pymongo>=1.9', 'tornado'],
     requires=['pymongo (>=1.9)', 'tornado'],
     download_url="http://github.com/downloads/bitly/asyncmongo/asyncmongo-%s.tar.gz" % version,
 )
