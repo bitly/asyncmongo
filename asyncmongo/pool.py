@@ -70,7 +70,7 @@ class ConnectionPool(object):
         # Establish an initial number of idle database connections:
         idle = [self.dedicated_connection() for i in range(mincached)]
         while idle:
-            idle.pop().close()
+            idle.pop()._close()
         self._connections = 0
     
     def new_connection(self):
@@ -83,8 +83,7 @@ class ConnectionPool(object):
         
         self._condition.acquire()
         try:
-            while (self._maxconnections
-                    and self._connections >= self._maxconnections):
+            if (self._maxconnections and self._connections >= self._maxconnections):
                 raise TooManyConnections("%d connections are active greater than max: %d" % (self._connections, self._maxconnections))
             # connection limit not reached, get a dedicated connection
             try: # first try to get it from the idle cache
@@ -100,15 +99,16 @@ class ConnectionPool(object):
         """Put a dedicated connection back into the idle cache."""
         if self._maxusage and con.usage_count > self._maxusage:
             self._connections -=1
-            con.close()
+            con._close()
             return
         self._condition.acquire()
         try:
             if not self._maxcached or len(self._idle_cache) < self._maxcached:
                 # the idle cache is not full, so put it there
-                self._idle_cache.append(con)
+                if con not in self._idle_cache:
+                    self._idle_cache.append(con)
             else: # if the idle cache is already full,
-                con.close() # then close the connection
+                con._close() # then close the connection
             self._connections -= 1
             self._condition.notify()
         finally:
@@ -121,7 +121,7 @@ class ConnectionPool(object):
             while self._idle_cache: # close all idle connections
                 con = self._idle_cache.pop(0)
                 try:
-                    con.close()
+                    con._close()
                 except Exception:
                     pass
                 self._connections -=1

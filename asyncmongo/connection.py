@@ -59,11 +59,22 @@ class Connection(object):
             raise InterfaceError(error)
     
     def _socket_close(self):
+        if self.__callback:
+            self.__callback(None, InterfaceError('connection closed'))
+        self.__callback = None
         self.__alive = False
+        self.__pool.cache(self)
     
-    def close(self):
+    def _close(self):
+        if self.__callback:
+            self.__callback(None, InterfaceError('connection closed'))
+        self.__callback = None
         self.__alive = False
         self.__stream.close()
+    
+    def close(self):
+        self._close()
+        self.__pool.cache(self)
     
     def send_message(self, message, callback):
         """ send a message over the wire; callback=None indicates a safe=False call where we write and forget about it"""

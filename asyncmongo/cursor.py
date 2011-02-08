@@ -127,9 +127,13 @@ class Cursor(object):
             callback = self.async_callback(self._handle_response, orig_callback=callback)
 
         connection = self.__pool.connection()
-        connection.send_message(
-            message.insert(self.full_collection_name, docs,
-                           check_keys, safe, kwargs), callback=callback)
+        try:
+            connection.send_message(
+                message.insert(self.full_collection_name, docs,
+                    check_keys, safe, kwargs), callback=callback)
+        except:
+            connection.close()
+            raise
     
     def remove(self, spec_or_id=None, safe=True, callback=None, **kwargs):
         if not isinstance(safe, bool):
@@ -153,9 +157,13 @@ class Cursor(object):
             callback = self.async_callback(self._handle_response, orig_callback=callback)
 
         connection = self.__pool.connection()
-        connection.send_message(
-            message.delete(self.full_collection_name, spec_or_id, safe, kwargs),
-            callback=callback)
+        try:
+            connection.send_message(
+                message.delete(self.full_collection_name, spec_or_id, safe, kwargs),
+                    callback=callback)
+        except:
+            connection.close()
+            raise
 
     
     def update(self, spec, document, upsert=False, manipulate=False,
@@ -248,9 +256,13 @@ class Cursor(object):
 
         self.__limit = None
         connection = self.__pool.connection()
-        connection.send_message(
-            message.update(self.full_collection_name, upsert, multi,
-                          spec, document, safe, kwargs), callback=callback)
+        try:
+            connection.send_message(
+                message.update(self.full_collection_name, upsert, multi,
+                    spec, document, safe, kwargs), callback=callback)
+        except:
+            connection.close()
+            raise
 
     
     def find_one(self, spec_or_id, **kwargs):
@@ -370,11 +382,14 @@ class Cursor(object):
         self.__is_command = False # _is_commandf
         
         connection = self.__pool.connection()
-        connection.send_message(
-            message.query(self.__query_options(),
-                          self.full_collection_name,
-                          self.__skip, self.__limit,
-                          self.__query_spec(), self.__fields), callback=self.async_callback(self._handle_response, orig_callback=callback))
+        try:
+            connection.send_message(
+                message.query(self.__query_options(),
+                              self.full_collection_name,
+                              self.__skip, self.__limit,
+                              self.__query_spec(), self.__fields), callback=self.async_callback(self._handle_response, orig_callback=callback))
+        except:
+            connection.close()
     
     def _handle_response(self, result, error=None, orig_callback=None):
         try:

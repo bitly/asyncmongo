@@ -1,0 +1,6 @@
+this tornado test application is used to ensure that asyncmongo is correctly cleaning up connections
+under various disconnect scenarios
+
+while true; do sh /path/to/mongo/initscript stop; sleep 0.5; sh /path/to/mongo/initscript start; sleep 2; done
+
+ab -n 10000000 -c 5 'http://127.0.0.1:5150/put'
