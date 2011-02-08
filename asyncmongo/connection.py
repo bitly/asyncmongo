@@ -31,6 +31,14 @@ import logging
 from errors import ProgrammingError, IntegrityError, InterfaceError
 
 class Connection(object):
+    """
+    :Parameters:
+      - `host`: hostname or ip of mongo host
+      - `port`: port to connect to
+      - `slave_ok` (optional): is it okay to connect directly to and perform queries on a slave instance
+      - `autoreconnect` (optional): auto reconnect on interface errors
+      
+    """
     def __init__(self, host, port, slave_ok=False, autoreconnect=True, pool=None):
         assert isinstance(host, (str, unicode))
         assert isinstance(port, int)
@@ -59,6 +67,7 @@ class Connection(object):
             raise InterfaceError(error)
     
     def _socket_close(self):
+        """cleanup after the socket is closed by the other end"""
         if self.__callback:
             self.__callback(None, InterfaceError('connection closed'))
         self.__callback = None
@@ -66,13 +75,16 @@ class Connection(object):
         self.__pool.cache(self)
     
     def _close(self):
+        """close the socket and cleanup"""
         if self.__callback:
             self.__callback(None, InterfaceError('connection closed'))
         self.__callback = None
         self.__alive = False
+        self.__stream._close_callback = None
         self.__stream.close()
     
     def close(self):
+        """close this connection; re-cache this connection object"""
         self._close()
         self.__pool.cache(self)
     

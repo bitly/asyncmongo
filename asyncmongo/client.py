@@ -24,9 +24,25 @@ class Client(object):
     
     Internally Client maintains a pool of connections that will live beyond the life of this object.
     
+    :Parameters:
+      - `pool_id`: unique id for this connection pool
+      - `**kwargs`: passed to `pool.ConnectionPool`
+          - `mincached` (optional): minimum connections to open on instantiation. 0 to open connections on first use
+          - `maxcached` (optional): maximum inactive cached connections for this pool. 0 for unlimited
+          - `maxconnections` (optional): maximum open connections for this pool. 0 for unlimited
+          - `maxusage` (optional): number of requests allowed on a connection before it is closed. 0 for unlimited
+          - `dbname`: mongo database name
+      - `**kwargs`: passed to `connection.Connection`
+          - `host`: hostname or ip of mongo host
+          - `port`: port to connect to
+          - `slave_ok` (optional): is it okay to connect directly to and perform queries on a slave instance
+          - `autoreconnect` (optional): auto reconnect on interface errors
+    
+    @returns a `Client` instance that wraps a `pool.ConnectionPool`
+    
     Usage:
-        db = asyncmongo.Client(host, port, dbname).connection(collectionname)
-        db.find({...}, callback=...)
+        >>> db = asyncmongo.Client(pool_id, host=host, port=port, dbname=dbname)
+        >>> db.collectionname.find({...}, callback=...)
         
     """
     def __init__(self, pool_id=None, **kwargs):

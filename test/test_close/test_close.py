@@ -31,7 +31,11 @@ class Put(BaseHandler):
     @tornado.web.asynchronous
     def get(self):
         rand = base64.b64encode(os.urandom(32))
-        self.db.test.insert({ 'blah': rand }, callback=self.async_callback(self.finish_save))
+        try:
+            self.db.test.insert({ 'blah': rand }, callback=self.async_callback(self.finish_save))
+        except Exception, e:
+            logging.error(e)
+            return self.api_response({'status':'ERROR', 'status_string': '%s' % e})
     
     def finish_save(self, response, error):
         if error or response[0].get('ok') != 1:

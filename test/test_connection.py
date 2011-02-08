@@ -9,7 +9,7 @@ TEST_TIMESTAMP = int(time.time())
 
 def test_query():
     test_shunt.setup()
-    db = asyncmongo.Client(pool_id='test_query', host='127.0.0.1', port=27017, dbname='test')
+    db = asyncmongo.Client(pool_id='test_query', host='127.0.0.1', port=27017, dbname='test', mincached=3)
 
     def insert_callback(response, error):
         logging.info(response)

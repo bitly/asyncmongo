@@ -10,7 +10,7 @@ def randomize(values):
 
 options = {
     'dev' : {
-        'mongo_database' : {'host' : '127.0.0.1', 'port' : 27017, 'dbname' : 'testdb', 'maxconnections':5, 'maxcached':2}
+        'mongo_database' : {'host' : '127.0.0.1', 'port' : 27017, 'dbname' : 'testdb', 'maxconnections':5}
     }
 }
 

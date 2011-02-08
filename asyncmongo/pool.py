@@ -23,7 +23,11 @@ class ConnectionPools(object):
     """ singleton to keep track of named connection pools """
     @classmethod
     def get_connection_pool(self, pool_id, *args, **kwargs):
-        """get a named connection pool, transparently creating it if it doesn't already exist"""
+        """get a connection pool, transparently creating it if it doesn't already exist
+
+        :Parameters:
+            - `pool_id`: unique id for a connection pool
+        """
         assert isinstance(pool_id, (str, unicode))
         if not hasattr(self, '_pools'):
             self._pools = {}
@@ -45,9 +49,24 @@ class ConnectionPools(object):
                 pool.close()
 
 class ConnectionPool(object):
-    """Connection Pool to a single mongo instance."""
-    def __init__(self, mincached=0, maxcached=0, 
-                maxconnections=0, maxusage=0, dbname=None, *args, **kwargs):
+    """Connection Pool to a single mongo instance.
+    
+    :Parameters:
+      - `mincached` (optional): minimum connections to open on instantiation. 0 to open connections on first use
+      - `maxcached` (optional): maximum inactive cached connections for this pool. 0 for unlimited
+      - `maxconnections` (optional): maximum open connections for this pool. 0 for unlimited
+      - `maxusage` (optional): number of requests allowed on a connection before it is closed. 0 for unlimited
+      - `dbname`: mongo database name
+      - `**kwargs`: passed to `connection.Connection`
+    
+    """
+    def __init__(self, 
+                mincached=0, 
+                maxcached=0, 
+                maxconnections=0, 
+                maxusage=0, 
+                dbname=None, 
+                *args, **kwargs):
         assert isinstance(mincached, int)
         assert isinstance(maxcached, int)
         assert isinstance(maxconnections, int)
@@ -66,12 +85,12 @@ class ConnectionPool(object):
         self._idle_cache = [] # the actual connections that can be used
         self._condition = Condition()
         self._dbname = dbname
+        self._connections = 0
         
         # Establish an initial number of idle database connections:
-        idle = [self.dedicated_connection() for i in range(mincached)]
+        idle = [self.connection() for i in range(mincached)]
         while idle:
-            idle.pop()._close()
-        self._connections = 0
+            self.cache(idle.pop())
     
     def new_connection(self):
         kwargs = self._kwargs
@@ -99,19 +118,24 @@ class ConnectionPool(object):
         """Put a dedicated connection back into the idle cache."""
         if self._maxusage and con.usage_count > self._maxusage:
             self._connections -=1
+            # logging.info('dropping connection %s uses past max usage %s' % (con.usage_count, self._maxusage))
             con._close()
             return
         self._condition.acquire()
+        if con in self._idle_cache:
+            # called via socket close on a connection in the idle cache
+            self._condition.release()
+            return
         try:
             if not self._maxcached or len(self._idle_cache) < self._maxcached:
                 # the idle cache is not full, so put it there
-                if con not in self._idle_cache:
-                    self._idle_cache.append(con)
+                self._idle_cache.append(con)
             else: # if the idle cache is already full,
+                # logging.info('dropping connection. connection pool (%s) is full. maxcached %s' % (len(self._idle_cache), self._maxcached))
                 con._close() # then close the connection
-            self._connections -= 1
             self._condition.notify()
         finally:
+            self._connections -= 1
             self._condition.release()
     
     def close(self):
