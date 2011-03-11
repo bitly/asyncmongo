@@ -379,7 +379,7 @@ class Cursor(object):
         # self.__as_class = as_class
         self.__tz_aware = False #collection.database.connection.tz_aware
         self.__must_use_master = _must_use_master
-        self.__is_command = False # _is_commandf
+        self.__is_command = _is_command
         
         connection = self.__pool.connection()
         try:
