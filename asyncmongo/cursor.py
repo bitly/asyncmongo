@@ -41,19 +41,6 @@ class Cursor(object):
         self.__collection = collection
         self.__pool = pool
     
-    def async_callback(self, callback, *args, **kwargs):
-        if callback is None:
-            return None
-        if args or kwargs:
-            callback = functools.partial(callback, *args, **kwargs)
-        def wrapper(*args, **kwargs):
-            try:
-                return callback(*args, **kwargs)
-            except Exception, e:
-                logging.error("Exception in callback",
-                              exc_info=True)
-        return wrapper
-            
     @property
     def full_collection_name(self):
         return u'%s.%s' % (self.__dbname, self.__collection)
@@ -124,7 +111,7 @@ class Cursor(object):
             raise TypeError("callback can not be used with safe=False")
         
         if callback:
-            callback = self.async_callback(self._handle_response, orig_callback=callback)
+            callback = functools.partial(self._handle_response, orig_callback=callback)
 
         connection = self.__pool.connection()
         try:
@@ -154,7 +141,7 @@ class Cursor(object):
             raise TypeError("callback can not be used with safe=False")
         
         if callback:
-            callback = self.async_callback(self._handle_response, orig_callback=callback)
+            callback = functools.partial(self._handle_response, orig_callback=callback)
 
         connection = self.__pool.connection()
         try:
@@ -252,7 +239,7 @@ class Cursor(object):
             raise TypeError("callback can not be used with safe=False")
         
         if callback:
-            callback = self.async_callback(self._handle_response, orig_callback=callback)
+            callback = functools.partial(self._handle_response, orig_callback=callback)
 
         self.__limit = None
         connection = self.__pool.connection()
@@ -387,23 +374,20 @@ class Cursor(object):
                 message.query(self.__query_options(),
                               self.full_collection_name,
                               self.__skip, self.__limit,
-                              self.__query_spec(), self.__fields), callback=self.async_callback(self._handle_response, orig_callback=callback))
+                              self.__query_spec(), self.__fields), callback=functools.partial(self._handle_response, orig_callback=callback))
         except:
             connection.close()
     
     def _handle_response(self, result, error=None, orig_callback=None):
-        try:
-            if error:
-                logging.error('%s %s' % (self.full_collection_name , error))
-                orig_callback(None, error=error)
+        if error:
+            logging.error('%s %s' % (self.full_collection_name , error))
+            orig_callback(None, error=error)
+        else:
+            if self.__limit == -1 and len(result['data']) == 1:
+                # handle the find_one() call
+                orig_callback(result['data'][0], error=None)
             else:
-                if self.__limit == -1 and len(result['data']) == 1:
-                    # handle the find_one() call
-                    orig_callback(result['data'][0], error=None)
-                else:
-                    orig_callback(result['data'], error=None)
-        except:
-            logging.exception('callback failed')
+                orig_callback(result['data'], error=None)
     
     def __query_options(self):
         """Get the query options string to use for this query."""
