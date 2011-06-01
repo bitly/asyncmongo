@@ -23,7 +23,7 @@ Usage
         @property
         def db(self):
             if not hasattr(self, '_db'):
-                self._db = asyncmongo.Client(pool_id='mydb', host='127.0.0.1', port=27107, maxcached=10, maxconnections=50, dbname='test')
+                self._db = asyncmongo.Client(pool_id='mydb', host='127.0.0.1', port=27017, maxcached=10, maxconnections=50, dbname='test')
             return self._db
     
         @tornado.web.asynchronous
