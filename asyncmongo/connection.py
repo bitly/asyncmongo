@@ -35,19 +35,16 @@ class Connection(object):
     :Parameters:
       - `host`: hostname or ip of mongo host
       - `port`: port to connect to
-      - `slave_ok` (optional): is it okay to connect directly to and perform queries on a slave instance
       - `autoreconnect` (optional): auto reconnect on interface errors
       
     """
-    def __init__(self, host, port, slave_ok=False, autoreconnect=True, pool=None):
+    def __init__(self, host, port, autoreconnect=True, pool=None):
         assert isinstance(host, (str, unicode))
         assert isinstance(port, int)
-        assert isinstance(slave_ok, bool)
         assert isinstance(autoreconnect, bool)
         assert pool
         self.__host = host
         self.__port = port
-        self.__slave_ok = slave_ok
         self.__stream = None
         self.__callback = None
         self.__alive = False
@@ -158,5 +155,4 @@ class Connection(object):
             return
         # logging.info('response: %s' % response)
         callback(response)
-
 

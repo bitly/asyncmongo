@@ -36,7 +36,7 @@ class Client(object):
       - `**kwargs`: passed to `connection.Connection`
           - `host`: hostname or ip of mongo host
           - `port`: port to connect to
-          - `slave_ok` (optional): is it okay to connect directly to and perform queries on a slave instance
+          - `slave_okay` (optional): is it okay to connect directly to and perform queries on a slave instance
           - `autoreconnect` (optional): auto reconnect on interface errors
     
     @returns a `Client` instance that wraps a `pool.ConnectionPool`

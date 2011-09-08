@@ -66,12 +66,14 @@ class ConnectionPool(object):
                 maxconnections=0, 
                 maxusage=0, 
                 dbname=None, 
+                slave_okay=False, 
                 *args, **kwargs):
         assert isinstance(mincached, int)
         assert isinstance(maxcached, int)
         assert isinstance(maxconnections, int)
         assert isinstance(maxusage, int)
         assert isinstance(dbname, (str, unicode, None.__class__))
+        assert isinstance(slave_okay, bool)
         if mincached and maxcached:
             assert mincached <= maxcached
         if maxconnections:
@@ -85,6 +87,7 @@ class ConnectionPool(object):
         self._idle_cache = [] # the actual connections that can be used
         self._condition = Condition()
         self._dbname = dbname
+        self._slave_okay = slave_okay
         self._connections = 0
         
         # Establish an initial number of idle database connections:
@@ -153,4 +156,14 @@ class ConnectionPool(object):
         finally:
             self._condition.release()
     
+    def __get_slave_okay(self):
+        """Is it OK to perform queries on a secondary or slave?
+        """
+        return self._slave_okay
 
+    def __set_slave_okay(self, value):
+        """Property setter for slave_okay"""
+        assert isinstance(value, bool)
+        self._slave_okay = value
+
+    slave_okay = property(__get_slave_okay, __set_slave_okay)
