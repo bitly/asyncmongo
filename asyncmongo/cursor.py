@@ -40,6 +40,7 @@ class Cursor(object):
         self.__dbname = dbname
         self.__collection = collection
         self.__pool = pool
+        self.__slave_okay = False
     
     @property
     def full_collection_name(self):
@@ -267,7 +268,7 @@ class Cursor(object):
     
     def find(self, spec=None, fields=None, skip=0, limit=0,
                  timeout=True, snapshot=False, tailable=False, sort=None,
-                 max_scan=None,
+                 max_scan=None, slave_okay=False,
                  _must_use_master=False, _is_command=False,
                  callback=None):
         """Query the database.
@@ -322,6 +323,8 @@ class Cursor(object):
             :meth:`~pymongo.cursor.Cursor.sort` for details.
           - `max_scan` (optional): limit the number of documents
             examined when performing the query
+          - `slave_okay` (optional): is it okay to connect directly
+            to and perform queries on a slave instance
         
         .. mongodoc:: find
         """
@@ -361,6 +364,7 @@ class Cursor(object):
         self.__snapshot = snapshot
         self.__ordering = sort and helpers._index_document(sort) or None
         self.__max_scan = max_scan
+        self.__slave_okay = slave_okay
         self.__explain = False
         self.__hint = None
         # self.__as_class = as_class
@@ -394,7 +398,7 @@ class Cursor(object):
         options = 0
         if self.__tailable:
             options |= _QUERY_OPTIONS["tailable_cursor"]
-        if False: #self.__collection.database.connection.slave_okay:
+        if self.__slave_okay or self.__pool.slave_okay:
             options |= _QUERY_OPTIONS["slave_okay"]
         if not self.__timeout:
             options |= _QUERY_OPTIONS["no_timeout"]
