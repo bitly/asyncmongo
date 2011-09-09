@@ -23,12 +23,12 @@ assert asyncmongo.__file__.startswith(app_dir)
 
 
 class MongoTest(unittest.TestCase):
-    mongo_options = [('--port', str(27017))]
+    mongod_options = [('--port', str(27017))]
     def setUp(self):
         """setup method that starts up mongod instances using `self.mongo_options`"""
         self.temp_dirs = []
         self.mongods = []
-        for options in self.mongo_options:
+        for options in self.mongod_options:
             dirname = os.tempnam()
             os.makedirs(dirname)
             self.temp_dirs.append(dirname)
@@ -38,11 +38,13 @@ class MongoTest(unittest.TestCase):
             pipe = subprocess.Popen(options)
             self.mongods.append(pipe)
             logging.debug('started mongod %s' % pipe.pid)
-        logging.info('waiting for mongod to start')
-        time.sleep(3)
+        sleep_time = 1 + (len(self.mongods) * 2)
+        logging.info('waiting for mongod to start (sleeping %d seconds)' % sleep_time)
+        time.sleep(sleep_time)
     
     def tearDown(self):
         """teardown method that cleans up child mongod instances, and removes their temporary data files"""
+        logging.debug('teardown')
         for mongod in self.mongods:
             logging.debug('killing mongod %s' % mongod.pid)
             os.kill(mongod.pid, signal.SIGKILL)
