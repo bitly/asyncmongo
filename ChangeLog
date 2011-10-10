@@ -1,0 +1,15 @@
+Version 1.0 10/8/2011
+  * #12 authentication support 
+  * #14 support for slave_okay=True
+  * #6 fix port typo in example code
+  * implement command method
+
+Version 0.1.3 2/8/2011
+  * fix cleanup for connections that aren't closed cleanly
+  * #1 implement mincached
+
+Version 0.1.2 12/6/2010
+  * fixes for querying with safe=False
+ 
+Version 0.1 11/17/2010
+  * Initial release

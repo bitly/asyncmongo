@@ -29,8 +29,8 @@ try:
 except ImportError:
     raise ImportError("tornado library not installed. Install tornado. https://github.com/facebook/tornado")
 
-version = "0.1.3"
-version_info = (0, 1, 3)
+version = "1.0"
+version_info = (1, 0)
 
 ASCENDING = 1
 """Ascending sort order."""

@@ -9,12 +9,14 @@ Installation
 
 Installing: `pip install asyncmongo`
 
-Installing form github: `pip install -e git://github.com/bitly/asyncmongo.git#egg=asyncmongo`
+Installing form github: `pip install  git+https://github.com/bitly/asyncmongo.git`
 
 Installing from source: `git clone git://github.com/bitly/asyncmongo.git; cd asyncmongo; python setup.py install`
 
 Usage
 -----
+
+asyncmongo syntax strives to be similar to [pymongo](http://api.mongodb.org/python/current/api/pymongo/collection.html).
 
     import asyncmongo
     import tornado.web
@@ -41,9 +43,14 @@ Usage
 About
 -----
 
-Features not supported: some features from pymongo are not currently implemented. i.e.: directly 
-interfacing with indexes, dropping collections, and retrieving results in batches instead of all at once. 
+Some features are not currently implemented: 
+
+* directly interfacing with indexes, dropping collections
+* retrieving results in batches instead of all at once 
 (asyncmongo's nature means that no calls are blocking regardless of the number of results you are retrieving)
+* native Replica Set support #16
+* tailable cursors #15
+
 
 Requirements
 ------------
