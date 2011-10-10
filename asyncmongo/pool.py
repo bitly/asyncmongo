@@ -19,6 +19,7 @@ import logging
 from errors import TooManyConnections, ProgrammingError
 from connection import Connection
 
+
 class ConnectionPools(object):
     """ singleton to keep track of named connection pools """
     @classmethod
@@ -57,6 +58,7 @@ class ConnectionPool(object):
       - `maxconnections` (optional): maximum open connections for this pool. 0 for unlimited
       - `maxusage` (optional): number of requests allowed on a connection before it is closed. 0 for unlimited
       - `dbname`: mongo database name
+      - `slave_okay` (optional): is it okay to connect directly to and perform queries on a slave instance
       - `**kwargs`: passed to `connection.Connection`
     
     """
@@ -89,6 +91,7 @@ class ConnectionPool(object):
         self._dbname = dbname
         self._slave_okay = slave_okay
         self._connections = 0
+
         
         # Establish an initial number of idle database connections:
         idle = [self.connection() for i in range(mincached)]
@@ -156,14 +159,4 @@ class ConnectionPool(object):
         finally:
             self._condition.release()
     
-    def __get_slave_okay(self):
-        """Is it OK to perform queries on a secondary or slave?
-        """
-        return self._slave_okay
 
-    def __set_slave_okay(self, value):
-        """Property setter for slave_okay"""
-        assert isinstance(value, bool)
-        self._slave_okay = value
-
-    slave_okay = property(__get_slave_okay, __set_slave_okay)
