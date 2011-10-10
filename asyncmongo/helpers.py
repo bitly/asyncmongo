@@ -1,3 +1,4 @@
+import hashlib
 
 import bson
 from bson.son import SON
@@ -78,3 +79,24 @@ def _index_document(index_list):
                             "DESCENDING, or GEO2D")
         index[key] = value
     return index
+
+def _password_digest(username, password):
+    """Get a password digest to use for authentication.
+    """
+    if not isinstance(password, basestring):
+        raise TypeError("password must be an instance of basestring")
+    if not isinstance(username, basestring):
+        raise TypeError("username must be an instance of basestring")
+
+    md5hash = hashlib.md5()
+    md5hash.update("%s:mongo:%s" % (username.encode('utf-8'),
+                                    password.encode('utf-8')))
+    return unicode(md5hash.hexdigest())
+
+def _auth_key(nonce, username, password):
+    """Get an auth key to use for authentication.
+    """
+    digest = _password_digest(username, password)
+    md5hash = hashlib.md5()
+    md5hash.update("%s%s%s" % (nonce, unicode(username), digest))
+    return unicode(md5hash.hexdigest())

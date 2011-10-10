@@ -377,10 +377,15 @@ class Cursor(object):
             connection.send_message(
                 message.query(self.__query_options(),
                               self.full_collection_name,
-                              self.__skip, self.__limit,
-                              self.__query_spec(), self.__fields), callback=functools.partial(self._handle_response, orig_callback=callback))
-        except:
+                              self.__skip, 
+                              self.__limit,
+                              self.__query_spec(),
+                              self.__fields), 
+                callback=functools.partial(self._handle_response, orig_callback=callback))
+        except Exception as e:
+            logging.error('Error sending query %s' % e)
             connection.close()
+            raise
     
     def _handle_response(self, result, error=None, orig_callback=None):
         if error:
@@ -398,7 +403,7 @@ class Cursor(object):
         options = 0
         if self.__tailable:
             options |= _QUERY_OPTIONS["tailable_cursor"]
-        if self.__slave_okay or self.__pool.slave_okay:
+        if self.__slave_okay or self.__pool._slave_okay:
             options |= _QUERY_OPTIONS["slave_okay"]
         if not self.__timeout:
             options |= _QUERY_OPTIONS["no_timeout"]

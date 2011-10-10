@@ -54,3 +54,6 @@ class NotSupportedError(DatabaseError):
 
 class TooManyConnections(Error):
     pass
+
+class AuthenticationError(Error):
+    pass
