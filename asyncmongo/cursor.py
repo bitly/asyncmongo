@@ -382,7 +382,7 @@ class Cursor(object):
                               self.__query_spec(),
                               self.__fields), 
                 callback=functools.partial(self._handle_response, orig_callback=callback))
-        except Exception as e:
+        except Exception, e:
             logging.error('Error sending query %s' % e)
             connection.close()
             raise
