@@ -109,7 +109,7 @@ class ConnectionPool(object):
         self._condition.acquire()
         try:
             if (self._maxconnections and self._connections >= self._maxconnections):
-                raise TooManyConnections("%d connections are active greater than max: %d" % (self._connections, self._maxconnections))
+                raise TooManyConnections("%d connections are already equal to the max: %d" % (self._connections, self._maxconnections))
             # connection limit not reached, get a dedicated connection
             try: # first try to get it from the idle cache
                 con = self._idle_cache.pop(0)
