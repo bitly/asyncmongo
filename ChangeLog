@@ -1,3 +1,8 @@
+Version 1.0.3 10/21/2011
+  * #22 fix missing README.md in MANIFEST
+  * python 2.5 compatibility
+  * #23 update TooManyConnections error wording
+
 Version 1.0 10/8/2011
   * #12 authentication support 
   * #14 support for slave_okay=True
