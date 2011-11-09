@@ -1,3 +1,6 @@
+Version 1.1.1 11/8/2011
+  * fix cursor close in cases where IntegrityError is raised
+
 Version 1.1 11/8/2011
   * #26 close cursors after find()
 
