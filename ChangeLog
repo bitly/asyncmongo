@@ -1,3 +1,6 @@
+Version 1.1 11/8/2011
+  * #26 close cursors after find()
+
 Version 1.0.3 10/21/2011
   * #22 fix missing README.md in MANIFEST
   * python 2.5 compatibility
