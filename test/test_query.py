@@ -8,7 +8,7 @@ import pymongo
 
 
 class QueryTest(test_shunt.MongoTest):
-    mongod_options = [('--port', '27999')]
+    mongod_options = [('--port', '27017')]
 
     @property
     def pymongo_conn(self):
@@ -25,7 +25,7 @@ class QueryTest(test_shunt.MongoTest):
         self.pymongo_conn.test.foo.insert([{'i': i} for i in xrange(200)])
 
     def test_query(self):
-        db = asyncmongo.Client(pool_id='test_query', host='127.0.0.1', port=27999, dbname='test', mincached=3)
+        db = asyncmongo.Client(pool_id='test_query', host='127.0.0.1', port=int(self.mongod_options[0][1]), dbname='test', mincached=3)
 
         def noop_callback(response, error):
             tornado.ioloop.IOLoop.instance().stop()
