@@ -388,6 +388,17 @@ class Cursor(object):
             raise
     
     def _handle_response(self, result, error=None, orig_callback=None):
+        if result and result.get('cursor_id'):
+            connection = self.__pool.connection()
+            try:
+                connection.send_message(
+                    message.kill_cursors([result['cursor_id']]),
+                    callback=None)
+            except Exception, e:
+                logging.error('Error killing cursor %s: %s' % (result['cursor_id'], e))
+                connection.close()
+                raise
+        
         if error:
             logging.error('%s %s' % (self.full_collection_name , error))
             orig_callback(None, error=error)
@@ -398,17 +409,6 @@ class Cursor(object):
             else:
                 orig_callback(result['data'], error=None)
 
-        if result.get('cursor_id'):
-            # logging.debug('killing cursor %s', result['cursor_id'])
-            connection = self.__pool.connection()
-            try:
-                connection.send_message(
-                    message.kill_cursors([result['cursor_id']]),
-                    callback=None)
-            except Exception, e:
-                logging.error('Error killing cursor %s: %s' % (result['cursor_id'], e))
-                connection.close()
-                raise
     
     def __query_options(self):
         """Get the query options string to use for this query."""

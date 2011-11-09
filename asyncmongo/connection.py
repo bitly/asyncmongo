@@ -177,7 +177,7 @@ class Connection(object):
         
         if response and response['data'] and response['data'][0].get('err') and response['data'][0].get('code'):
             # logging.error(response['data'][0]['err'])
-            callback(None, IntegrityError(response['data'][0]['err'], code=response['data'][0]['code']))
+            callback(response, IntegrityError(response['data'][0]['err'], code=response['data'][0]['code']))
             return
         # logging.info('response: %s' % response)
         callback(response)
