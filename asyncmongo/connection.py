@@ -22,7 +22,7 @@ MongoDB.
    application developers.
 """
 
-import tornado.iostream
+import sys
 import socket
 import struct
 import logging
@@ -42,7 +42,8 @@ class Connection(object):
       - `autoreconnect` (optional): auto reconnect on interface errors
       
     """
-    def __init__(self, host, port, dbuser=None, dbpass=None, autoreconnect=True, pool=None):
+    def __init__(self, host, port, dbuser=None, dbpass=None, autoreconnect=True, pool=None,
+                 backend="tornado"):
         assert isinstance(host, (str, unicode))
         assert isinstance(port, int)
         assert isinstance(autoreconnect, bool)
@@ -61,15 +62,21 @@ class Connection(object):
         self.__pool = pool
         self.__deferred_message = None
         self.__deferred_callback = None
+        self.__backend = self.__load_backend(backend)
         self.usage_count = 0
         self.__connect()
+
+    def __load_backend(self, name):
+        __import__('asyncmongo.backends.%s_backend' % name)
+        mod = sys.modules['asyncmongo.backends.%s_backend' % name]
+        return mod.AsyncBackend()
     
     def __connect(self):
         self.usage_count = 0
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
             s.connect((self.__host, self.__port))
-            self.__stream = tornado.iostream.IOStream(s)
+            self.__stream = self.__backend.register_stream(s)
             self.__stream.set_close_callback(self._socket_close)
             self.__alive = True
         except socket.error, error:
@@ -92,7 +99,6 @@ class Connection(object):
             self.__callback(None, InterfaceError('connection closed'))
         self.__callback = None
         self.__alive = False
-        self.__stream._close_callback = None
         self.__stream.close()
     
     def close(self):
@@ -128,7 +134,7 @@ class Connection(object):
         try:
             self.__stream.write(data)
             if self.__callback:
-                self.__stream.read_bytes(16, callback=self._parse_header)
+                self.__stream.read(16, callback=self._parse_header)
             else:
                 self.__request_id = None
                 self.__pool.cache(self)
@@ -151,7 +157,7 @@ class Connection(object):
         # logging.info('%s' % length)
         # logging.info('waiting for another %d bytes' % length - 16)
         try:
-            self.__stream.read_bytes(length - 16, callback=self._parse_response)
+            self.__stream.read(length - 16, callback=self._parse_response)
         except IOError, e:
             self.__alive = False
             raise

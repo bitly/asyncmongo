@@ -16,18 +16,12 @@
 
 """
 AsyncMongo is an asynchronous library for accessing mongo 
-which is built on the tornado ioloop.
-
 http://github.com/bitly/asyncmongo
 """
 try:
     import bson
 except ImportError:
     raise ImportError("bson library not installed. Install pymongo >= 1.9 https://github.com/mongodb/mongo-python-driver")
-try:
-    import tornado
-except ImportError:
-    raise ImportError("tornado library not installed. Install tornado. https://github.com/facebook/tornado")
 
 # also update in setup.py
 version = "1.1.1"
