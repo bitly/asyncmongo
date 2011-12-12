@@ -38,7 +38,7 @@ asyncmongo syntax strives to be similar to [pymongo](http://api.mongodb.org/pyth
         def _on_response(self, response, error):
             if error:
                 raise tornado.web.HTTPError(500)
-            self.render('template', full_name=respose['full_name'])
+            self.render('template', full_name=response['full_name'])
 
 About
 -----
