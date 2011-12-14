@@ -21,17 +21,18 @@ class AuthenticationTest(test_shunt.MongoTest):
             db = asyncmongo.Client(pool_id='testauth', host='127.0.0.1', port=27017, dbname='test', dbuser='testuser', dbpass='testpass', maxconnections=2)
         
             def update_callback(response, error):
+                tornado.ioloop.IOLoop.instance().stop()
                 logging.info(response)
                 assert len(response) == 1
                 test_shunt.register_called('update')
-                tornado.ioloop.IOLoop.instance().stop()
-        
+
             db.test_stats.update({"_id" : TEST_TIMESTAMP}, {'$inc' : {'test_count' : 1}}, upsert=True, callback=update_callback)
         
             tornado.ioloop.IOLoop.instance().start()
             test_shunt.assert_called('update')
 
             def query_callback(response, error):
+                tornado.ioloop.IOLoop.instance().stop()
                 logging.info(response)
                 logging.info(error)
                 assert error is None
@@ -39,8 +40,7 @@ class AuthenticationTest(test_shunt.MongoTest):
                 assert response['_id'] == TEST_TIMESTAMP
                 assert response['test_count'] == 1
                 test_shunt.register_called('retrieved')
-                tornado.ioloop.IOLoop.instance().stop()
-        
+
             db.test_stats.find_one({"_id" : TEST_TIMESTAMP}, callback=query_callback)
             tornado.ioloop.IOLoop.instance().start()
             test_shunt.assert_called('retrieved')

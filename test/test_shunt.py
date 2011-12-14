@@ -18,6 +18,7 @@ if app_dir not in sys.path:
     sys.path.insert(0, app_dir)
 
 import asyncmongo
+import asyncmongo.pool
 # make sure we get the local asyncmongo
 assert asyncmongo.__file__.startswith(app_dir)
 
@@ -41,6 +42,7 @@ class MongoTest(unittest.TestCase):
         sleep_time = 1 + (len(self.mongods) * 2)
         logging.info('waiting for mongod to start (sleeping %d seconds)' % sleep_time)
         time.sleep(sleep_time)
+        asyncmongo.pool.ConnectionPools.close_idle_connections()
     
     def tearDown(self):
         """teardown method that cleans up child mongod instances, and removes their temporary data files"""
