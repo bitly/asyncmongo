@@ -39,6 +39,9 @@ class ConnectionPools(object):
     @classmethod
     def close_idle_connections(self, pool_id=None):
         """close idle connections to mongo"""
+        if not hasattr(self, '_pools'):
+            return
+
         if pool_id:
             if pool_id not in self._pools:
                 raise ProgrammingError("pool %r does not exist" % pool_id)
@@ -46,7 +49,7 @@ class ConnectionPools(object):
                 pool = self._pools[pool_id]
                 pool.close()
         else:
-            for pool in self._pools.items():
+            for pool_id, pool in self._pools.items():
                 pool.close()
 
 class ConnectionPool(object):

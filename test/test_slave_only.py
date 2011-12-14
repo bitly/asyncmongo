@@ -21,11 +21,11 @@ class SlaveOnlyTest(test_shunt.MongoTest):
             time.sleep(4)
         
             def update_callback(response, error):
+                tornado.ioloop.IOLoop.instance().stop()
                 logging.info(response)
                 assert len(response) == 1
                 test_shunt.register_called('update')
-                tornado.ioloop.IOLoop.instance().stop()
-        
+
             masterdb.test_stats.update({"_id" : TEST_TIMESTAMP}, {'$inc' : {'test_count' : 1}}, upsert=True, callback=update_callback)
         
             tornado.ioloop.IOLoop.instance().start()
@@ -35,6 +35,7 @@ class SlaveOnlyTest(test_shunt.MongoTest):
             time.sleep(2.5)
         
             def query_callback(response, error):
+                tornado.ioloop.IOLoop.instance().stop()
                 logging.info(response)
                 logging.info(error)
                 assert error is None
@@ -42,8 +43,7 @@ class SlaveOnlyTest(test_shunt.MongoTest):
                 assert response['_id'] == TEST_TIMESTAMP
                 assert response['test_count'] == 1
                 test_shunt.register_called('retrieved')
-                tornado.ioloop.IOLoop.instance().stop()
-        
+
             slavedb.test_stats.find_one({"_id" : TEST_TIMESTAMP}, callback=query_callback)
             tornado.ioloop.IOLoop.instance().start()
             test_shunt.assert_called('retrieved')
