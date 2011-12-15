@@ -42,11 +42,11 @@ class MongoTest(unittest.TestCase):
         sleep_time = 1 + (len(self.mongods) * 2)
         logging.info('waiting for mongod to start (sleeping %d seconds)' % sleep_time)
         time.sleep(sleep_time)
-        asyncmongo.pool.ConnectionPools.close_idle_connections()
-    
+
     def tearDown(self):
         """teardown method that cleans up child mongod instances, and removes their temporary data files"""
         logging.debug('teardown')
+        asyncmongo.pool.ConnectionPools.close_idle_connections()
         for mongod in self.mongods:
             logging.debug('killing mongod %s' % mongod.pid)
             os.kill(mongod.pid, signal.SIGKILL)
