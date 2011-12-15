@@ -6,6 +6,8 @@ import subprocess
 import signal
 import time
 
+import tornado.ioloop
+
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG,
    format='%(asctime)s %(process)d %(filename)s %(lineno)d %(levelname)s #| %(message)s',
    datefmt='%H:%M:%S')
@@ -22,11 +24,35 @@ import asyncmongo.pool
 # make sure we get the local asyncmongo
 assert asyncmongo.__file__.startswith(app_dir)
 
+class PuritanicalIOLoop(tornado.ioloop.IOLoop):
+    """
+    A loop that quits when it encounters an Exception -- makes errors in
+    callbacks easier to debug and prevents them from hanging the unittest
+    suite.
+    """
+    def handle_callback_exception(self, callback):
+        exc_type, exc_value, tb = sys.exc_info()
+        raise exc_value
 
 class MongoTest(unittest.TestCase):
+    """
+    Starts and stops a mongod
+    """
     mongod_options = [('--port', str(27017))]
     def setUp(self):
         """setup method that starts up mongod instances using `self.mongo_options`"""
+        # So any function that calls IOLoop.instance() gets the
+        # PuritanicalIOLoop instead of a default loop.
+        if not tornado.ioloop.IOLoop.initialized():
+            self.loop = PuritanicalIOLoop()
+            self.loop.install()
+        else:
+            self.loop = tornado.ioloop.IOLoop.instance()
+            self.assert_(
+                isinstance(self.loop, PuritanicalIOLoop),
+                "Couldn't install IOLoop"
+            )
+            
         self.temp_dirs = []
         self.mongods = []
         for options in self.mongod_options:
