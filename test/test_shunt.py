@@ -7,6 +7,7 @@ import signal
 import time
 
 import tornado.ioloop
+import pymongo
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG,
    format='%(asctime)s %(process)d %(filename)s %(lineno)d %(levelname)s #| %(message)s',
@@ -81,6 +82,23 @@ class MongoTest(unittest.TestCase):
             logging.debug('cleaning up %s' % dirname)
             pipe = subprocess.Popen(['rm', '-rf', dirname])
             pipe.wait()
+
+
+class SynchronousMongoTest(unittest.TestCase):
+    """
+    Convenience class: a test case that can make synchronous calls to the
+    official pymongo to ease setup code, via the pymongo_conn property.
+    """
+    mongod_options = [('--port', str(27017))]
+    @property
+    def pymongo_conn(self):
+        if not hasattr(self, '_pymongo_conn'):
+            self._pymongo_conn = pymongo.Connection(port=int(self.mongod_options[0][1]))
+        return self._pymongo_conn
+
+    def get_open_cursors(self):
+        output = self.pymongo_conn.admin.command('serverStatus')
+        return output.get('cursors', {}).get('totalOpen')
 
 results = {}
 

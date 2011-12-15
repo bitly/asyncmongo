@@ -4,21 +4,10 @@ import time
 
 import test_shunt
 import asyncmongo
-import pymongo
 
 
-class QueryTest(test_shunt.MongoTest):
+class QueryTest(test_shunt.MongoTest, test_shunt.SynchronousMongoTest):
     mongod_options = [('--port', '27017')]
-
-    @property
-    def pymongo_conn(self):
-        if not hasattr(self, '_pymongo_conn'):
-            self._pymongo_conn = pymongo.Connection(port=int(self.mongod_options[0][1]))
-        return self._pymongo_conn
-
-    def get_open_cursors(self):
-        output = self.pymongo_conn.admin.command('serverStatus')
-        return output.get('cursors', {}).get('totalOpen')
 
     def setUp(self):
         super(QueryTest, self).setUp()
