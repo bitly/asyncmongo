@@ -1,3 +1,10 @@
+Version 1.2 1/25/2012
+  * #29 support for glib mainloop
+  * #35 support for hint to find()
+  * #32 close connections in unit tests
+  * #34 unittest updates
+  * #31 fix typo in example
+
 Version 1.1.1 11/8/2011
   * fix cursor close in cases where IntegrityError is raised
 
