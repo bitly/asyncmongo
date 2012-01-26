@@ -269,7 +269,7 @@ class Cursor(object):
     def find(self, spec=None, fields=None, skip=0, limit=0,
                  timeout=True, snapshot=False, tailable=False, sort=None,
                  max_scan=None, slave_okay=False,
-                 _must_use_master=False, _is_command=False,
+                 _must_use_master=False, _is_command=False, hint=None, debug=False,
                  callback=None):
         """Query the database.
         
@@ -366,7 +366,8 @@ class Cursor(object):
         self.__max_scan = max_scan
         self.__slave_okay = slave_okay
         self.__explain = False
-        self.__hint = None
+        self.__hint = hint
+        self.__debug = debug
         # self.__as_class = as_class
         self.__tz_aware = False #collection.database.connection.tz_aware
         self.__must_use_master = _must_use_master
@@ -374,6 +375,9 @@ class Cursor(object):
         
         connection = self.__pool.connection()
         try:
+            if self.__debug:
+                print u'QUERY_SPEC: {}'.format(self.__query_spec())
+
             connection.send_message(
                 message.query(self.__query_options(),
                               self.full_collection_name,
