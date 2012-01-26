@@ -33,6 +33,7 @@ class Client(object):
           - `maxconnections` (optional): maximum open connections for this pool. 0 for unlimited
           - `maxusage` (optional): number of requests allowed on a connection before it is closed. 0 for unlimited
           - `dbname`: mongo database name
+          - `backend': async loop backend, default = tornado
       - `**kwargs`: passed to `connection.Connection`
           - `host`: hostname or ip of mongo host
           - `port`: port to connect to
