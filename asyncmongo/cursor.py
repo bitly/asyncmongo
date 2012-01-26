@@ -376,7 +376,7 @@ class Cursor(object):
         connection = self.__pool.connection()
         try:
             if self.__debug:
-                print u'QUERY_SPEC: {}'.format(self.__query_spec())
+                logging.debug('QUERY_SPEC: %r' % self.__query_spec())
 
             connection.send_message(
                 message.query(self.__query_options(),
