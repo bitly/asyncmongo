@@ -1,6 +1,7 @@
 import tornado.ioloop
 import logging
 import time
+from asyncmongo.errors import TooManyConnections
 
 import test_shunt
 import asyncmongo
@@ -47,3 +48,21 @@ class PooledDBTest(test_shunt.MongoTest):
         tornado.ioloop.IOLoop.instance().start()
         test_shunt.assert_called('pool1')
         test_shunt.assert_called('pool2')
+
+    def too_many_connections(self):
+        clients = [
+            asyncmongo.Client('id2', maxconnections=2, host='127.0.0.1', port=27017, dbname='test')
+            for i in range(3)
+        ]
+
+        def callback(response, error):
+            pass
+
+        for client in clients[:2]:
+            client.connection('foo').find({}, callback=callback)
+
+        self.assertRaises(
+            TooManyConnections,
+            lambda: clients[2].connection('foo').find({}, callback=callback)
+        )
+
