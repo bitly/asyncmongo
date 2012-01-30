@@ -1,3 +1,7 @@
+Version 1.2.1 1/30/2012
+  * #37 include asyncmongo.backends in setup.py
+  * #38 README.md not included in .tar.gz
+
 Version 1.2 1/25/2012
   * #29 support for glib mainloop
   * #35 support for hint to find()
