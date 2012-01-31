@@ -17,8 +17,16 @@
 import tornado.iostream
 
 class TornadoStream(object):
-    def __init__(self, socket):
-        self.__stream = tornado.iostream.IOStream(socket)
+    def __init__(self, socket, **kwargs):
+        """
+        :Parameters:
+          - `socket`: TCP socket
+          - `**kwargs`: passed to `tornado.iostream.IOStream`
+            - `io_loop` (optional): Tornado IOLoop instance.
+            - `max_buffer_size` (optional):
+            - `read_chunk_size` (optional):
+        """
+        self.__stream = tornado.iostream.IOStream(socket, **kwargs)
 
     def write(self, data):
         self.__stream.write(data)
@@ -41,6 +49,13 @@ class AsyncBackend(object):
                 cls, *args, **kwargs)
         return cls._instance
 
-    def register_stream(self, socket):
-        return TornadoStream(socket)
-        
+    def register_stream(self, socket, **kwargs):
+        """
+        :Parameters:
+          - `socket`: TCP socket
+          - `**kwargs`: passed to `tornado.iostream.IOStream`
+            - `io_loop` (optional): Tornado IOLoop instance.
+            - `max_buffer_size` (optional):
+            - `read_chunk_size` (optional):
+        """
+        return TornadoStream(socket, **kwargs)
