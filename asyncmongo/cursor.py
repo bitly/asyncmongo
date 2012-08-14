@@ -332,12 +332,15 @@ class Cursor(object):
         if spec is None:
             spec = {}
         
+        if limit is None:
+            limit = 0
+
         if not isinstance(spec, dict):
             raise TypeError("spec must be an instance of dict")
         if not isinstance(skip, int):
             raise TypeError("skip must be an instance of int")
         if not isinstance(limit, int):
-            raise TypeError("limit must be an instance of int")
+            raise TypeError("limit must be an instance of int or None")
         if not isinstance(timeout, bool):
             raise TypeError("timeout must be an instance of bool")
         if not isinstance(snapshot, bool):
