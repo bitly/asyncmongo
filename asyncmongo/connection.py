@@ -138,7 +138,7 @@ class Connection(object):
                 self.__request_id = None
                 self.__pool.cache(self)
                 
-        except IOError, e:
+        except IOError:
             self.__alive = False
             raise
         # return self.__request_id 
@@ -154,7 +154,7 @@ class Connection(object):
         assert operation == struct.unpack("<i", header[12:])[0]
         try:
             self.__stream.read(length - 16, callback=self._parse_response)
-        except IOError, e:
+        except IOError:
             self.__alive = False
             raise
     
