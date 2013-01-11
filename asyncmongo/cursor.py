@@ -270,7 +270,7 @@ class Cursor(object):
                  timeout=True, snapshot=False, tailable=False, sort=None,
                  max_scan=None, slave_okay=False,
                  _must_use_master=False, _is_command=False, hint=None, debug=False,
-                 callback=None):
+                 comment=None, callback=None):
         """Query the database.
         
         The `spec` argument is a prototype document that all results
@@ -370,6 +370,7 @@ class Cursor(object):
         self.__slave_okay = slave_okay
         self.__explain = False
         self.__hint = hint
+        self.__comment = comment
         self.__debug = debug
         # self.__as_class = as_class
         self.__tz_aware = False #collection.database.connection.tz_aware
@@ -439,6 +440,8 @@ class Cursor(object):
             spec["$explain"] = True
         if self.__hint:
             spec["$hint"] = self.__hint
+        if self.__comment:
+            spec["$comment"] = self.__comment
         if self.__snapshot:
             spec["$snapshot"] = True
         if self.__max_scan:
