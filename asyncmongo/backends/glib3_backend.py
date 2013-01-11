@@ -17,7 +17,7 @@
 from gi.repository import GObject
 
 class Glib3Stream(object):
-    def __init__(self, socket):
+    def __init__(self, socket, **kwargs):
         self.__socket = socket
         self.__close_id = None
         self.__read_id = None
@@ -81,5 +81,5 @@ class AsyncBackend(object):
                 cls, *args, **kwargs)
         return cls._instance
 
-    def register_stream(self, socket):
-        return Glib3Stream(socket)
+    def register_stream(self, socket, **kwargs):
+        return Glib3Stream(socket, **kwargs)

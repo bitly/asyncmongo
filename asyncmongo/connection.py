@@ -40,15 +40,17 @@ class Connection(object):
       - `dbuser`: db user to connect with
       - `dbpass`: db password
       - `autoreconnect` (optional): auto reconnect on interface errors
+      - `**kwargs`: passed to `backends.AsyncBackend.register_stream`
       
     """
     def __init__(self, host, port, dbuser=None, dbpass=None, autoreconnect=True, pool=None,
-                 backend="tornado"):
+                 backend="tornado", **kwargs):
         assert isinstance(host, (str, unicode))
         assert isinstance(port, int)
         assert isinstance(autoreconnect, bool)
         assert isinstance(dbuser, (str, unicode, None.__class__))
         assert isinstance(dbpass, (str, unicode, None.__class__))
+        assert isinstance(kwargs, (dict, None.__class__))
         assert pool
         self.__host = host
         self.__port = port
@@ -62,6 +64,7 @@ class Connection(object):
         self.__pool = pool
         self.__deferred_message = None
         self.__deferred_callback = None
+        self.__kwargs = kwargs
         self.__backend = self.__load_backend(backend)
         self.usage_count = 0
         self.__connect()
@@ -76,7 +79,7 @@ class Connection(object):
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
             s.connect((self.__host, self.__port))
-            self.__stream = self.__backend.register_stream(s)
+            self.__stream = self.__backend.register_stream(s, **self.__kwargs)
             self.__stream.set_close_callback(self._socket_close)
             self.__alive = True
         except socket.error, error:
@@ -231,5 +234,3 @@ class Connection(object):
                               SON({'getnonce' : 1}),
                               SON({})
                     ))
-    
-
