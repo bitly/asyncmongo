@@ -4,14 +4,12 @@ asyncmongo
 AsyncMongo is an asynchronous library for accessing mongo 
 which is built on the tornado ioloop.
 
+[![Build Status](https://travis-ci.org/bitly/asyncmongo.png?branch=master)](https://travis-ci.org/bitly/asyncmongo)
+
 Installation
 ------------
 
 Installing: `pip install asyncmongo`
-
-Installing form github: `pip install  git+https://github.com/bitly/asyncmongo.git`
-
-Installing from source: `git clone git://github.com/bitly/asyncmongo.git; cd asyncmongo; python setup.py install`
 
 Usage
 -----
