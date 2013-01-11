@@ -18,6 +18,7 @@ from errors import DataError
 from pool import ConnectionPools
 from cursor import Cursor
 from bson.son import SON
+from functools import partial
 
 class Client(object):
     """
@@ -88,6 +89,18 @@ class Client(object):
             raise DataError("collection names must not contain the "
                               "null character")
         return Cursor(dbname or self._pool._dbname, collectionname, self._pool)
+
+    def collection_names(self, callback):
+        """Get a list of all the collection names in selected database"""
+        callback = partial(self._collection_names_result, callback)
+        self["system.namespaces"].find(_must_use_master=True, callback=callback)
+
+    def _collection_names_result(self, callback, results, error=None):
+        """callback to for collection names query, filters out collection names"""
+        names = [r['name'] for r in results if r['name'].count('.') == 1]
+        assert error == None, repr(error)
+        strip = len(self._pool._dbname) + 1
+        callback([name[strip:] for name in names])
 
     def command(self, command, value=1, callback=None,
                 check=True, allowable_errors=[], **kwargs):
