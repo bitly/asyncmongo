@@ -130,7 +130,6 @@ class Connection(object):
         self.usage_count +=1
         # __request_id used by get_more()
         (self.__request_id, data) = message
-        # logging.info('request id %d writing %r' % (self.__request_id, data))
         try:
             self.__stream.write(data)
             if self.__callback:
@@ -139,14 +138,13 @@ class Connection(object):
                 self.__request_id = None
                 self.__pool.cache(self)
                 
-        except IOError, e:
+        except IOError:
             self.__alive = False
             raise
         # return self.__request_id 
     
     def _parse_header(self, header):
         # return self.__receive_data_on_socket(length - 16, sock)
-        # logging.info('got data %r' % header)
         length = int(struct.unpack("<i", header[:4])[0])
         request_id = struct.unpack("<i", header[8:12])[0]
         assert request_id == self.__request_id, \
@@ -154,16 +152,13 @@ class Connection(object):
                                        request_id)
         operation = 1 # who knows why
         assert operation == struct.unpack("<i", header[12:])[0]
-        # logging.info('%s' % length)
-        # logging.info('waiting for another %d bytes' % length - 16)
         try:
             self.__stream.read(length - 16, callback=self._parse_response)
-        except IOError, e:
+        except IOError:
             self.__alive = False
             raise
     
     def _parse_response(self, response):
-        # logging.info('got data %r' % response)
         callback = self.__callback
         request_id = self.__request_id
         self.__request_id = None
@@ -177,22 +172,20 @@ class Connection(object):
         try:
             response = helpers._unpack_response(response, request_id) # TODO: pass tz_awar
         except Exception, e:
-            logging.error('error %s' % e)
+            logging.debug('error %s' % e)
             callback(None, e)
             return
         
         if response and response['data'] and response['data'][0].get('err') and response['data'][0].get('code'):
-            # logging.error(response['data'][0]['err'])
             callback(response, IntegrityError(response['data'][0]['err'], code=response['data'][0]['code']))
             return
-        # logging.info('response: %s' % response)
         callback(response)
 
     def _start_authentication(self, response, error=None):
         # this is the nonce response
         if error:
-            logging.error(error)
-            logging.error(response)
+            logging.debug(error)
+            logging.debug(response)
             raise AuthenticationError(error)
         nonce = response['data'][0]['nonce']
         key = helpers._auth_key(nonce, self.__dbuser, self.__dbpass)
@@ -214,7 +207,7 @@ class Connection(object):
         assert response['number_returned'] == 1
         response = response['data'][0]
         if response['ok'] != 1: 
-            logging.error('Failed authentication %s' % response['errmsg'])
+            logging.debug('Failed authentication %s' % response['errmsg'])
             self.__deferred_message = None
             self.__deferred_callback = None
             raise AuthenticationError(response['errmsg'])

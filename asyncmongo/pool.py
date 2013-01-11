@@ -127,7 +127,7 @@ class ConnectionPool(object):
         """Put a dedicated connection back into the idle cache."""
         if self._maxusage and con.usage_count > self._maxusage:
             self._connections -=1
-            # logging.info('dropping connection %s uses past max usage %s' % (con.usage_count, self._maxusage))
+            logging.debug('dropping connection %s uses past max usage %s' % (con.usage_count, self._maxusage))
             con._close()
             return
         self._condition.acquire()
@@ -140,7 +140,7 @@ class ConnectionPool(object):
                 # the idle cache is not full, so put it there
                 self._idle_cache.append(con)
             else: # if the idle cache is already full,
-                # logging.info('dropping connection. connection pool (%s) is full. maxcached %s' % (len(self._idle_cache), self._maxcached))
+                logging.debug('dropping connection. connection pool (%s) is full. maxcached %s' % (len(self._idle_cache), self._maxcached))
                 con._close() # then close the connection
             self._condition.notify()
         finally:

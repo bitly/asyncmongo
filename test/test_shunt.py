@@ -61,7 +61,8 @@ class MongoTest(unittest.TestCase):
             os.makedirs(dirname)
             self.temp_dirs.append(dirname)
             
-            options = ['mongod', '--bind_ip', '127.0.0.1', '--oplogSize', '10', '--dbpath', dirname, '-v'] + list(options)
+            options = ['mongod', '--bind_ip', '127.0.0.1', '--oplogSize', '10',
+                       '--dbpath', dirname, '--smallfiles', '-v'] + list(options)
             logging.debug(options)
             pipe = subprocess.Popen(options)
             self.mongods.append(pipe)
