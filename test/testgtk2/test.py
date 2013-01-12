@@ -7,7 +7,7 @@ pygtk.require('2.0')
 import gtk
 import asyncmongo
 
-database= {'host' : '127.0.0.1', 'port' : 27017, 'dbname' : 'testdb', 'maxconnections':5}
+database= {'host' : '127.0.0.1', 'port' : 27018, 'dbname' : 'testdb', 'maxconnections':5}
 
 class TestApp(object):
     def __init__(self):

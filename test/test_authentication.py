@@ -12,13 +12,13 @@ class AuthenticationTest(test_shunt.MongoTest):
     def setUp(self):
         super(AuthenticationTest, self).setUp()
         logging.info('creating user')
-        pipe = subprocess.Popen('''echo -e 'use test;\n db.addUser("testuser", "testpass");\n exit;' | mongo --port 27017 --host 127.0.0.1''', shell=True)
+        pipe = subprocess.Popen('''echo -e 'use test;\n db.addUser("testuser", "testpass");\n exit;' | mongo --port 27018 --host 127.0.0.1''', shell=True)
         pipe.wait()
         
     def test_authentication(self):
         try:
             test_shunt.setup()
-            db = asyncmongo.Client(pool_id='testauth', host='127.0.0.1', port=27017, dbname='test', dbuser='testuser', dbpass='testpass', maxconnections=2)
+            db = asyncmongo.Client(pool_id='testauth', host='127.0.0.1', port=27018, dbname='test', dbuser='testuser', dbpass='testpass', maxconnections=2)
         
             def update_callback(response, error):
                 tornado.ioloop.IOLoop.instance().stop()

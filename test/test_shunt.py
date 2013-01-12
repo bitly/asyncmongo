@@ -39,7 +39,7 @@ class MongoTest(unittest.TestCase):
     """
     Starts and stops a mongod
     """
-    mongod_options = [('--port', str(27017))]
+    mongod_options = [('--port', str(27018))]
     def setUp(self):
         """setup method that starts up mongod instances using `self.mongo_options`"""
         # So any function that calls IOLoop.instance() gets the
@@ -62,7 +62,7 @@ class MongoTest(unittest.TestCase):
             self.temp_dirs.append(dirname)
             
             options = ['mongod', '--bind_ip', '127.0.0.1', '--oplogSize', '10',
-                       '--dbpath', dirname, '--smallfiles', '-v'] + list(options)
+                       '--dbpath', dirname, '--smallfiles', '-v', '--nojournal'] + list(options)
             logging.debug(options)
             pipe = subprocess.Popen(options)
             self.mongods.append(pipe)
@@ -90,7 +90,7 @@ class SynchronousMongoTest(unittest.TestCase):
     Convenience class: a test case that can make synchronous calls to the
     official pymongo to ease setup code, via the pymongo_conn property.
     """
-    mongod_options = [('--port', str(27017))]
+    mongod_options = [('--port', str(27018))]
     @property
     def pymongo_conn(self):
         if not hasattr(self, '_pymongo_conn'):

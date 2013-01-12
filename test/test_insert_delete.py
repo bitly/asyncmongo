@@ -10,7 +10,7 @@ TEST_TIMESTAMP = int(time.time())
 class InsertDeleteTest(test_shunt.MongoTest):
     def test_insert(self):
         test_shunt.setup()
-        db = asyncmongo.Client(pool_id='testinsert', host='127.0.0.1', port=27017, dbname='test')
+        db = asyncmongo.Client(pool_id='testinsert', host='127.0.0.1', port=27018, dbname='test')
         
         def insert_callback(response, error):
             tornado.ioloop.IOLoop.instance().stop()
