@@ -8,7 +8,7 @@ class CommandTest(
     test_shunt.MongoTest,
     test_shunt.SynchronousMongoTest,
 ):
-    mongod_options = [('--port', '27017')]
+    mongod_options = [('--port', '27018')]
 
     def setUp(self):
         super(CommandTest, self).setUp()

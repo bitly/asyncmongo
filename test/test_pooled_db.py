@@ -15,7 +15,7 @@ class PooledDBTest(test_shunt.MongoTest):
         """
         print asyncmongo.__file__
         test_shunt.setup()
-        client = asyncmongo.Client('id1', maxconnections=5, host='127.0.0.1', port=27017, dbname='test')
+        client = asyncmongo.Client('id1', maxconnections=5, host='127.0.0.1', port=27018, dbname='test')
         test_users_collection = client.connection('test_users')
         
         def insert_callback(response, error):
@@ -51,7 +51,7 @@ class PooledDBTest(test_shunt.MongoTest):
 
     def too_many_connections(self):
         clients = [
-            asyncmongo.Client('id2', maxconnections=2, host='127.0.0.1', port=27017, dbname='test')
+            asyncmongo.Client('id2', maxconnections=2, host='127.0.0.1', port=27018, dbname='test')
             for i in range(3)
         ]
 

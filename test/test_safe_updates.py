@@ -10,7 +10,7 @@ TEST_TIMESTAMP = int(time.time())
 class SafeUpdatesTest(test_shunt.MongoTest):
     def test_update_safe(self):
         test_shunt.setup()
-        db = asyncmongo.Client(pool_id='testinsert', host='127.0.0.1', port=27017, dbname='test', maxconnections=2)
+        db = asyncmongo.Client(pool_id='testinsert', host='127.0.0.1', port=27018, dbname='test', maxconnections=2)
         
         def update_callback(response, error):
             tornado.ioloop.IOLoop.instance().stop()

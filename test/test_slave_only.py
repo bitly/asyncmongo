@@ -9,14 +9,14 @@ TEST_TIMESTAMP = int(time.time())
 
 class SlaveOnlyTest(test_shunt.MongoTest):
     mongod_options = [
-        ('--port', '27017', '--master'),
-        ('--port', '27018', '--slave', '--source', '127.0.0.1:27017'), 
+        ('--port', '27018', '--master'),
+        ('--port', '27019', '--slave', '--source', '127.0.0.1:27018'), 
     ]
     def test_query_slave(self):
         try:
             test_shunt.setup()
-            masterdb = asyncmongo.Client(pool_id='testquerymaster', host='127.0.0.1', port=27017, dbname='test', maxconnections=2)
-            slavedb = asyncmongo.Client(pool_id='testqueryslave', host='127.0.0.1', port=27018, dbname='test', maxconnections=2, slave_okay=True)
+            masterdb = asyncmongo.Client(pool_id='testquerymaster', host='127.0.0.1', port=27018, dbname='test', maxconnections=2)
+            slavedb = asyncmongo.Client(pool_id='testqueryslave', host='127.0.0.1', port=27019, dbname='test', maxconnections=2, slave_okay=True)
             logging.debug('waiting for replication to start (sleeping 4 seconds)')
             time.sleep(4)
         
