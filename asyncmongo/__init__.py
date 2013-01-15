@@ -24,7 +24,7 @@ except ImportError:
     raise ImportError("bson library not installed. Install pymongo >= 1.9 https://github.com/mongodb/mongo-python-driver")
 
 # also update in setup.py
-version = "1.2.2-alpha"
+version = "1.2.2"
 version_info = (1, 2, 2)
 
 ASCENDING = 1

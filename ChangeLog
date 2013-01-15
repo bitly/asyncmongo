@@ -1,3 +1,11 @@
+Version 1.2.2 1/15/2013
+  * #55 updated tests; enabled travis-ci
+  * #54 cleanup logging
+  * #50 allow None for limit
+  * #49 add support for $comment in find
+  * #44 helper function to list all collections
+  * #40 add ability to pass arguments to ioLoop backend
+
 Version 1.2.1 1/30/2012
   * #37 include asyncmongo.backends in setup.py
   * #38 README.md not included in .tar.gz
