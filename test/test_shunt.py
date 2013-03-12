@@ -46,7 +46,7 @@ class MongoTest(unittest.TestCase):
         # PuritanicalIOLoop instead of a default loop.
         if not tornado.ioloop.IOLoop.initialized():
             self.loop = PuritanicalIOLoop()
-            self.loop.install()
+            tornado.ioloop.IOLoop._instance = self.loop
         else:
             self.loop = tornado.ioloop.IOLoop.instance()
             self.assert_(
@@ -61,8 +61,8 @@ class MongoTest(unittest.TestCase):
             os.makedirs(dirname)
             self.temp_dirs.append(dirname)
             
-            options = ['mongod', '--bind_ip', '127.0.0.1', '--oplogSize', '10',
-                       '--dbpath', dirname, '--smallfiles', '-v', '--nojournal'] + list(options)
+            options = ['mongod', '--oplogSize', '2', '--dbpath', dirname,
+                       '--smallfiles', '-v', '--nojournal'] + list(options)
             logging.debug(options)
             pipe = subprocess.Popen(options)
             self.mongods.append(pipe)

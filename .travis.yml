@@ -5,8 +5,12 @@ python:
   - "2.7"
 services: mongodb
 install:
-  - "pip install tornado --use-mirrors"
+  - "pip install tornado==2.4.1 --use-mirrors"
   - "pip install pymongo --use-mirrors"
-script: py.test
+env:
+  - TEST_REPLICA_SETS="true"
+  - TEST_REPLICA_SETS="false"
+script:
+  - if [[ $TEST_REPLICA_SETS == 'true' ]]; then py.test test/test_replica_set.py; else py.test --ignore=test/test_replica_set.py; fi
 notifications:
   email: false
