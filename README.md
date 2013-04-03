@@ -46,7 +46,6 @@ Some features are not currently implemented:
 * directly interfacing with indexes, dropping collections
 * retrieving results in batches instead of all at once 
 (asyncmongo's nature means that no calls are blocking regardless of the number of results you are retrieving)
-* native Replica Set support #16
 * tailable cursors #15
 
 
