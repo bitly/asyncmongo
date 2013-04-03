@@ -7,6 +7,15 @@ from asyncmongo import ASCENDING, DESCENDING, GEO2D
 from asyncmongo.errors import (DatabaseError, InterfaceError)
 
 
+def _parse_host(h):
+    try:
+        host, port = h.split(":", 1)
+        port = int(port)
+    except ValueError:
+        raise ValueError("Wrong host:port value: %s" % h)
+
+    return host, port
+
 def _unpack_response(response, cursor_id=None, as_class=dict, tz_aware=False):
     """Unpack a response from the database.
 

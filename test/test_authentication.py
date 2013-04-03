@@ -21,6 +21,7 @@ class AuthenticationTest(test_shunt.MongoTest):
             db = asyncmongo.Client(pool_id='testauth', host='127.0.0.1', port=27018, dbname='test', dbuser='testuser', dbpass='testpass', maxconnections=2)
         
             def update_callback(response, error):
+                logging.info("UPDATE:")
                 tornado.ioloop.IOLoop.instance().stop()
                 logging.info(response)
                 assert len(response) == 1

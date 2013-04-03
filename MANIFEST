@@ -9,6 +9,7 @@ asyncmongo/errors.py
 asyncmongo/helpers.py
 asyncmongo/message.py
 asyncmongo/pool.py
+asyncmongo/asyncjobs.py
 asyncmongo/backends/__init__.py
 asyncmongo/backends/glib2_backend.py
 asyncmongo/backends/glib3_backend.py
@@ -28,5 +29,6 @@ test/test_query.py
 test/test_safe_updates.py
 test/test_shunt.py
 test/test_slave_only.py
+test/test_replica_set.py
 test/testgtk2/test.py
 test/testgtk3/test.py
