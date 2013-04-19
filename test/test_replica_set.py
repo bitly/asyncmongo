@@ -2,12 +2,10 @@ import tornado.ioloop
 import time
 import logging
 import subprocess
-import socket
 
 import test_shunt
 import asyncmongo
 import asyncmongo.connection
-import asyncmongo.errors
 
 TEST_TIMESTAMP = int(time.time())
 
@@ -19,6 +17,7 @@ class ReplicaSetTest(test_shunt.MongoTest):
     ]
 
     def mongo_cmd(self, cmd, port=27018, res='"ok" : 1'):
+        logging.info("mongo_cmd: %s", cmd)
         pipe = subprocess.Popen("mongo --port %d" % port, shell=True,
                                 stdout=subprocess.PIPE, stdin=subprocess.PIPE)
         reply = pipe.communicate(cmd)[0]
@@ -34,34 +33,44 @@ class ReplicaSetTest(test_shunt.MongoTest):
                 logging.info("Waiting for %d to become master", port)
                 time.sleep(5)
 
+    def wait_secondary(self, port):
+        while True:
+            if self.mongo_cmd("db.isMaster();", port).find('"secondary" : true') > 0:
+                logging.info("%d is a secondary", port)
+                break
+            else:
+                logging.info("Waiting for %d to become secondary", port)
+                time.sleep(5)
+
     def setUp(self):
         super(ReplicaSetTest, self).setUp()
-        hostname = socket.gethostname()
-        logging.info("configuring a replica set at %s" % hostname)
+        logging.info("configuring a replica set at 127.0.0.1")
         cfg = """
         {
             "_id" : "rs0",
             "members" : [
                 {
                     "_id" : 0,
-                    "host" : "%(hostname)s:27018"
+                    "host" : "127.0.0.1:27018"
                 },
                 {
                     "_id" : 1,
-                    "host" : "%(hostname)s:27019",
+                    "host" : "127.0.0.1:27019",
                     "priority" : 2
                 },
                 {
                     "_id" : 2,
-                    "host" : "%(hostname)s:27020",
-                    "priority" : 0
+                    "host" : "127.0.0.1:27020",
+                    "priority" : 0,
+                    "hidden": true
                 }
             ]
         }
-        """ % dict(hostname=hostname)
-        self.mongo_cmd("rs.initiate(%s);" % cfg)
+        """
+        self.mongo_cmd("rs.initiate(%s);" % cfg, 27019)
         logging.info("waiting for replica set to finish configuring")
         self.wait_master(27019)
+        self.wait_secondary(27018)
 
     def test_connection(self):
         class Pool(object):
@@ -76,18 +85,30 @@ class ReplicaSetTest(test_shunt.MongoTest):
             def process(self, *args, **kwargs):
                 tornado.ioloop.IOLoop.instance().stop()
 
-        hostname = socket.gethostname()
         try:
-            conn = asyncmongo.connection.Connection(pool=Pool(),
-                                                    seed=[(hostname, 27018), (hostname, 27020)],
-                                                    rs="rs0")
+            for i in xrange(10):
+                conn = asyncmongo.connection.Connection(pool=Pool(),
+                                                        seed=[('127.0.0.1', 27018), ('127.0.0.1', 27020)],
+                                                        rs="rs0")
 
-            conn._put_job(AsyncClose(), 0)
-            conn._next_job()
-            tornado.ioloop.IOLoop.instance().start()
+                conn._put_job(AsyncClose(), 0)
+                conn._next_job()
+                tornado.ioloop.IOLoop.instance().start()
 
-            assert conn._host == hostname
-            assert conn._port == 27019
+                assert conn._host == '127.0.0.1'
+                assert conn._port == 27019
+
+            for i in xrange(10):
+                conn = asyncmongo.connection.Connection(pool=Pool(),
+                                                        seed=[('127.0.0.1', 27018), ('127.0.0.1', 27020)],
+                                                        rs="rs0", secondary_only=True)
+
+                conn._put_job(AsyncClose(), 0)
+                conn._next_job()
+                tornado.ioloop.IOLoop.instance().start()
+
+                assert conn._host == '127.0.0.1'
+                assert conn._port == 27018
 
         except:
             tornado.ioloop.IOLoop.instance().stop()
