@@ -62,7 +62,7 @@ class MongoTest(unittest.TestCase):
             self.temp_dirs.append(dirname)
             
             options = ['mongod', '--oplogSize', '2', '--dbpath', dirname,
-                       '--smallfiles', '-v', '--nojournal'] + list(options)
+                       '--smallfiles', '-v', '--nojournal', '--bind_ip', '0.0.0.0'] + list(options)
             logging.debug(options)
             pipe = subprocess.Popen(options)
             self.mongods.append(pipe)

@@ -23,11 +23,13 @@ MongoDB.
 """
 
 import logging
+import random
 from bson import SON
 
 import message
 import helpers
 from errors import AuthenticationError, RSConnectionError, InterfaceError
+
 
 class AsyncMessage(object):
     def __init__(self, connection, message, callback):
@@ -106,13 +108,14 @@ class AuthorizeJob(object):
             raise ValueError("Unexpected state: %s" % self._state)
 
 class ConnectRSJob(object):
-    def __init__(self, connection, seed, rs):
+    def __init__(self, connection, seed, rs, secondary_only):
         self.connection = connection
         self.known_hosts = set(seed)
         self.rs = rs
-        self._tried_hosts = set()
+        self._blacklisted = set()
         self._state = "seed"
         self._primary = None
+        self._sec_only = secondary_only
 
     def __repr__(self):
         return "ConnectRSJob at 0x%X, state = %s" % (id(self), self._state)
@@ -125,17 +128,25 @@ class ConnectRSJob(object):
                 self._state = "seed"
 
         if self._state == "seed":
-            fresh = self.known_hosts ^ self._tried_hosts
+            if self._sec_only and self._primary:
+                # Add primary host to blacklisted to avoid connecting to it
+                self._blacklisted.add(self._primary)
+
+            fresh = self.known_hosts ^ self._blacklisted
             logging.debug("Working through the rest of the host list: %r", fresh)
 
             while fresh:
-                if self._primary and self._primary not in self._tried_hosts:
+                if self._primary and self._primary not in self._blacklisted:
                     # Try primary first
                     h = self._primary
                 else:
-                    h = fresh.pop()
+                    h = random.choice(list(fresh))
 
-                self._tried_hosts.add(h)
+                if h in fresh:
+                    fresh.remove(h)
+
+                # Add tried host to blacklisted
+                self._blacklisted.add(h)
 
                 logging.debug("Connecting to %s:%s", *h)
                 self.connection._host, self.connection._port = h
@@ -178,11 +189,18 @@ class ConnectRSJob(object):
                 self.known_hosts.update(helpers._parse_host(h) for h in hosts)
 
             ismaster = res.get("ismaster")
-            if ismaster:
-                logging.info("Connected to master")
+            hidden = res.get("hidden")
+            if ismaster and not self._sec_only:  # master and required to connect to primary
+                assert not hidden, "Primary cannot be hidden"
+                logging.debug("Connected to master (%s)", res.get("me", "unknown"))
                 self._state = "done"
                 self.connection._next_job()
-            else:
+            elif not ismaster and self._sec_only and not hidden:  # not master and required to connect to secondary
+                assert res.get("secondary"), "Secondary must self-report as secondary"
+                logging.debug("Connected to secondary (%s)", res.get("me", "unknown"))
+                self._state = "done"
+                self.connection._next_job()
+            else:  # either not master and primary connection required or master and secondary required
                 primary = res.get("primary")
                 if primary:
                     self._primary = helpers._parse_host(primary)
