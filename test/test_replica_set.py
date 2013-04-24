@@ -117,6 +117,22 @@ class ReplicaSetTest(test_shunt.MongoTest):
     def test_update(self):
         try:
             test_shunt.setup()
+
+            db = asyncmongo.Client(pool_id='testrs_f', rs="wrong_rs", seed=[("127.0.0.1", 27020)], dbname='test', maxconnections=2)
+
+            # Try to update with a wrong replica set name
+            def update_callback(response, error):
+                tornado.ioloop.IOLoop.instance().stop()
+                logging.info(response)
+                logging.info(error)
+                assert isinstance(error, asyncmongo.RSConnectionError)
+                test_shunt.register_called('update_f')
+
+            db.test_stats.update({"_id" : TEST_TIMESTAMP}, {'$inc' : {'test_count' : 1}}, callback=update_callback)
+
+            tornado.ioloop.IOLoop.instance().start()
+            test_shunt.assert_called('update_f')
+
             db = asyncmongo.Client(pool_id='testrs', rs="rs0", seed=[("127.0.0.1", 27020)], dbname='test', maxconnections=2)
 
             # Update
