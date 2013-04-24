@@ -18,7 +18,8 @@ class AuthenticationTest(test_shunt.MongoTest):
     def test_authentication(self):
         try:
             test_shunt.setup()
-            db = asyncmongo.Client(pool_id='testauth', host='127.0.0.1', port=27018, dbname='test', dbuser='testuser', dbpass='testpass', maxconnections=2)
+            db = asyncmongo.Client(pool_id='testauth', host='127.0.0.1', port=27018, dbname='test', dbuser='testuser',
+                                   dbpass='testpass', maxconnections=2)
         
             def update_callback(response, error):
                 logging.info("UPDATE:")
@@ -27,8 +28,9 @@ class AuthenticationTest(test_shunt.MongoTest):
                 assert len(response) == 1
                 test_shunt.register_called('update')
 
-            db.test_stats.update({"_id" : TEST_TIMESTAMP}, {'$inc' : {'test_count' : 1}}, upsert=True, callback=update_callback)
-        
+            db.test_stats.update({"_id" : TEST_TIMESTAMP}, {'$inc' : {'test_count' : 1}}, upsert=True,
+                                 callback=update_callback)
+
             tornado.ioloop.IOLoop.instance().start()
             test_shunt.assert_called('update')
 
@@ -49,3 +51,23 @@ class AuthenticationTest(test_shunt.MongoTest):
             tornado.ioloop.IOLoop.instance().stop()
             raise
 
+    def test_failed_auth(self):
+        try:
+            test_shunt.setup()
+            db = asyncmongo.Client(pool_id='testauth_f', host='127.0.0.1', port=27018, dbname='test', dbuser='testuser',
+                                   dbpass='wrong', maxconnections=2)
+
+            def query_callback(response, error):
+                tornado.ioloop.IOLoop.instance().stop()
+                logging.info(response)
+                logging.info(error)
+                assert isinstance(error, asyncmongo.AuthenticationError)
+                assert response is None
+                test_shunt.register_called('auth_failed')
+
+            db.test_stats.find_one({"_id" : TEST_TIMESTAMP}, callback=query_callback)
+            tornado.ioloop.IOLoop.instance().start()
+            test_shunt.assert_called('auth_failed')
+        except:
+            tornado.ioloop.IOLoop.instance().stop()
+            raise

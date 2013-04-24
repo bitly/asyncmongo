@@ -47,23 +47,38 @@ class AsyncMessage(object):
             else:
                 self.callback(None, e)
 
-class AuthorizeJob(object):
-    def __init__(self, connection, dbuser, dbpass, pool):
-        super(AuthorizeJob, self).__init__()
+
+class AsyncJob(object):
+    def __init__(self, connection, state, err_callback):
+        super(AsyncJob, self).__init__()
         self.connection = connection
-        self._state = "start"
+        self._err_callback = err_callback
+        self._state = state
+
+    def _error(self, e):
+        self.connection.close()
+        if self._err_callback:
+            self._err_callback(e)
+
+    def update_err_callback(self, err_callback):
+        self._err_callback = err_callback
+
+    def __repr__(self):
+        return "%s at 0x%X, state = %r" % (self.__class__.__name__, id(self), self._state)
+
+
+class AuthorizeJob(AsyncJob):
+    def __init__(self, connection, dbuser, dbpass, pool, err_callback):
+        super(AuthorizeJob, self).__init__(connection, "start", err_callback)
         self.dbuser = dbuser
         self.dbpass = dbpass
         self.pool = pool
 
-    def __repr__(self):
-        return "AuthorizeJob at 0x%X, state = %r" % (id(self), self._state)
-
     def process(self, response=None, error=None):
         if error:
-            logging.debug(error)
-            logging.debug(response)
-            raise AuthenticationError(error)
+            logging.debug("Error during authentication: %r", error)
+            self._error(AuthenticationError(error))
+            return
 
         if self._state == "start":
             self._state = "nonce"
@@ -80,9 +95,13 @@ class AuthorizeJob(object):
         elif self._state == "nonce":
             # this is the nonce response
             self._state = "finish"
-            nonce = response['data'][0]['nonce']
-            logging.debug("Nonce received: %r", nonce)
-            key = helpers._auth_key(nonce, self.dbuser, self.dbpass)
+            try:
+                nonce = response['data'][0]['nonce']
+                logging.debug("Nonce received: %r", nonce)
+                key = helpers._auth_key(nonce, self.dbuser, self.dbpass)
+            except Exception, e:
+                self._error(AuthenticationError(e))
+                return
 
             msg = message.query(
                 0,
@@ -98,27 +117,30 @@ class AuthorizeJob(object):
             self.connection._send_message(msg, self.process)
         elif self._state == "finish":
             self._state = "done"
-            assert response['number_returned'] == 1
-            response = response['data'][0]
-            if response['ok'] != 1:
-                logging.debug('Failed authentication %s' % response['errmsg'])
-                raise AuthenticationError(response['errmsg'])
+            try:
+                assert response['number_returned'] == 1
+                response = response['data'][0]
+            except Exception, e:
+                self._error(AuthenticationError(e))
+                return
+
+            if response.get("ok") != 1:
+                logging.debug("Failed authentication %s", response.get("errmsg"))
+                self._error(AuthenticationError(response.get("errmsg")))
+                return
             self.connection._next_job()
         else:
-            raise ValueError("Unexpected state: %s" % self._state)
+            self._error(ValueError("Unexpected state: %s" % self._state))
 
-class ConnectRSJob(object):
-    def __init__(self, connection, seed, rs, secondary_only):
-        self.connection = connection
+
+class ConnectRSJob(AsyncJob):
+    def __init__(self, connection, seed, rs, secondary_only, err_callback):
+        super(ConnectRSJob, self).__init__(connection, "seed", err_callback)
         self.known_hosts = set(seed)
         self.rs = rs
         self._blacklisted = set()
-        self._state = "seed"
         self._primary = None
         self._sec_only = secondary_only
-
-    def __repr__(self):
-        return "ConnectRSJob at 0x%X, state = %s" % (id(self), self._state)
 
     def process(self, response=None, error=None):
         if error:
@@ -159,7 +181,8 @@ class ConnectRSJob(object):
                     break
 
             else:
-                raise RSConnectionError("No more hosts to try, tried: %s" % self.known_hosts)
+                self._error(RSConnectionError("No more hosts to try, tried: %s" % self.known_hosts))
+                return
 
             self._state = "ismaster"
             msg = message.query(
@@ -174,36 +197,42 @@ class ConnectRSJob(object):
         elif self._state == "ismaster":
             logging.debug("ismaster response: %r", response)
 
-            if len(response["data"]) == 1:
+            try:
+                assert len(response["data"]) == 1
                 res = response["data"][0]
-            else:
-                raise RSConnectionError("Invalid response data: %r" % response["data"])
+            except Exception, e:
+                self._error(RSConnectionError("Invalid response data: %r" % response.get("data")))
+                return
 
             rs_name = res.get("setName")
-            if rs_name:
-                if rs_name != self.rs:
-                    raise RSConnectionError("Wrong replica set: %s, expected: %s" %
-                                            (rs_name, self.rs))
+            if rs_name and rs_name != self.rs:
+                self._error(RSConnectionError("Wrong replica set: %s, expected: %s" % (rs_name, self.rs)))
+                return
+
             hosts = res.get("hosts")
             if hosts:
                 self.known_hosts.update(helpers._parse_host(h) for h in hosts)
 
             ismaster = res.get("ismaster")
             hidden = res.get("hidden")
-            if ismaster and not self._sec_only:  # master and required to connect to primary
-                assert not hidden, "Primary cannot be hidden"
-                logging.debug("Connected to master (%s)", res.get("me", "unknown"))
-                self._state = "done"
-                self.connection._next_job()
-            elif not ismaster and self._sec_only and not hidden:  # not master and required to connect to secondary
-                assert res.get("secondary"), "Secondary must self-report as secondary"
-                logging.debug("Connected to secondary (%s)", res.get("me", "unknown"))
-                self._state = "done"
-                self.connection._next_job()
-            else:  # either not master and primary connection required or master and secondary required
-                primary = res.get("primary")
-                if primary:
-                    self._primary = helpers._parse_host(primary)
+            try:
+                if ismaster and not self._sec_only:  # master and required to connect to primary
+                    assert not hidden, "Primary cannot be hidden"
+                    logging.debug("Connected to master (%s)", res.get("me", "unknown"))
+                    self._state = "done"
+                    self.connection._next_job()
+                elif not ismaster and self._sec_only and not hidden:  # not master and required to connect to secondary
+                    assert res.get("secondary"), "Secondary must self-report as secondary"
+                    logging.debug("Connected to secondary (%s)", res.get("me", "unknown"))
+                    self._state = "done"
+                    self.connection._next_job()
+                else:  # either not master and primary connection required or master and secondary required
+                    primary = res.get("primary")
+                    if primary:
+                        self._primary = helpers._parse_host(primary)
+                    self._state = "seed"
+                    self.process()
+            except Exception, e:
+                self._error(RSConnectionError(e))
+                return
 
-                self._state = "seed"
-                self.process()

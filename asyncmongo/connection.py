@@ -19,6 +19,7 @@ import socket
 import struct
 import logging
 from types import NoneType
+import functools
 
 from errors import ProgrammingError, IntegrityError, InterfaceError
 import helpers
@@ -84,19 +85,24 @@ class Connection(object):
         self.__backend = self.__load_backend(backend)
         self.__job_queue = []
         self.usage_count = 0
-        self.__connect()
+
+        self.__connect(self.connection_error)
+
+    def connection_error(self, error):
+        raise error
 
     def __load_backend(self, name):
         __import__('asyncmongo.backends.%s_backend' % name)
         mod = sys.modules['asyncmongo.backends.%s_backend' % name]
         return mod.AsyncBackend()
     
-    def __connect(self):
+    def __connect(self, err_callback):
+        # The callback is only called in case of exception by async jobs
         if self.__dbuser and self.__dbpass:
-            self._put_job(asyncjobs.AuthorizeJob(self, self.__dbuser, self.__dbpass, self.__pool))
+            self._put_job(asyncjobs.AuthorizeJob(self, self.__dbuser, self.__dbpass, self.__pool, err_callback))
 
         if self.__rs:
-            self._put_job(asyncjobs.ConnectRSJob(self, self.__seed, self.__rs, self.__secondary_only))
+            self._put_job(asyncjobs.ConnectRSJob(self, self.__seed, self.__rs, self.__secondary_only, err_callback))
             # Mark the connection as alive, even though it's not alive yet to prevent double-connecting
             self.__alive = True
         else:
@@ -116,34 +122,54 @@ class Connection(object):
     
     def _socket_close(self):
         """cleanup after the socket is closed by the other end"""
-        if self.__callback:
-            self.__callback(None, InterfaceError('connection closed'))
+        callback = self.__callback
         self.__callback = None
-        self.__alive = False
-        self.__pool.cache(self)
+        try:
+            if callback:
+                callback(None, InterfaceError('connection closed'))
+        finally:
+            self.__alive = False
+            self.__pool.cache(self)
     
     def _close(self):
         """close the socket and cleanup"""
-        if self.__callback:
-            self.__callback(None, InterfaceError('connection closed'))
+        callback = self.__callback
         self.__callback = None
-        self.__alive = False
-        self.__stream.close()
-    
+        try:
+            if callback:
+                callback(None, InterfaceError('connection closed'))
+        finally:
+            self.__alive = False
+            self.__stream.close()
+
     def close(self):
         """close this connection; re-cache this connection object"""
-        self._close()
-        self.__pool.cache(self)
+        try:
+            self._close()
+        finally:
+            self.__pool.cache(self)
 
     def send_message(self, message, callback):
         """ send a message over the wire; callback=None indicates a safe=False call where we write and forget about it"""
         
         if self.__callback is not None:
             raise ProgrammingError('connection already in use')
-        
+
+        if callback:
+            err_callback = functools.partial(callback, None)
+        else:
+            err_callback = None
+
+        # Go and update err_callback for async jobs in queue if any
+        for job in self.__job_queue:
+            # this is a dirty hack and I hate it, but there is no way of setting the correct
+            # err_callback during the connection time
+            if isinstance(job, asyncjobs.AsyncJob):
+                job.update_err_callback(err_callback)
+
         if not self.__alive:
             if self.__autoreconnect:
-                self.__connect()
+                self.__connect(err_callback)
             else:
                 raise InterfaceError('connection invalid. autoreconnect=False')
         

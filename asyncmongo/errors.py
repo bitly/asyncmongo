@@ -29,7 +29,7 @@ class Error(StandardError):
 class InterfaceError(Error):
     pass
 
-class RSConnectionError(Error):
+class RSConnectionError(InterfaceError):
     pass
 
 class DatabaseError(Error):
