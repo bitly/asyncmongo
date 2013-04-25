@@ -2,7 +2,7 @@ import os
 from distutils.core import setup
 
 # also update version in __init__.py
-version = '1.3-alpha2'
+version = '1.3-alpha3'
 
 setup(
     name="asyncmongo",
