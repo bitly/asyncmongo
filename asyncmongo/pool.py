@@ -34,6 +34,7 @@ class ConnectionPools(object):
             self._pools = {}
         if pool_id not in self._pools:
             self._pools[pool_id] = ConnectionPool(*args, **kwargs)
+        # logging.debug("%s: _connections = %d", pool_id, self._pools[pool_id]._connections)
         return self._pools[pool_id]
     
     @classmethod

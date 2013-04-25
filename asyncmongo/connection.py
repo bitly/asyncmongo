@@ -128,6 +128,9 @@ class Connection(object):
             if callback:
                 callback(None, InterfaceError('connection closed'))
         finally:
+            # Flush the job queue, don't call the callbacks associated with the remaining jobs
+            # since they have already been called as error callback on connection closing
+            self.__job_queue = []
             self.__alive = False
             self.__pool.cache(self)
     
@@ -139,6 +142,9 @@ class Connection(object):
             if callback:
                 callback(None, InterfaceError('connection closed'))
         finally:
+            # Flush the job queue, don't call the callbacks associated with the remaining jobs
+            # since they have already been called as error callback on connection closing
+            self.__job_queue = []
             self.__alive = False
             self.__stream.close()
 
@@ -232,9 +238,9 @@ class Connection(object):
         self.__request_id = None
         self.__callback = None
         if not self.__job_queue:
-            # skip adding to the cache because there is something else 
+            # skip adding to the cache because there is something else
             # that needs to be called on this connection for this request
-            # (ie: we authenticted, but still have to send the real req)
+            # (ie: we authenticated, but still have to send the real req)
             self.__pool.cache(self)
 
         try:
